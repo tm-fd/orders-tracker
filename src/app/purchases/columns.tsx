@@ -1,10 +1,12 @@
 import { Chip, Link } from "@heroui/react";
-import { DeleteIcon, EditIcon, EyeIcon } from '../../components/icons';
-import Purchase from '../../components/Purchase';
-import Actions from '../../components/Actions';
+import { DeleteIcon, EditIcon, EyeIcon, LoadingBars } from '@/components/icons';
+import Purchase from '@/components/Purchase';
+import Actions from '@/components/Actions';
 import { ZPurchase, PurchaseObj } from '../store/purchaseStore';
 import { LicensesCell } from '@/components/LicensesCell'; 
 import usePurchaseStore from '@/app/store/purchaseStore';
+import { getSource } from '@/app/utils';
+
 
 
 
@@ -57,22 +59,7 @@ export const columns = [
 ];
 
 
-const getSource = (purchase: PurchaseObj, oldPurchases: Purchase[] = [], purchaseStatus) => {
-  const orderNumberLength = purchase.orderNumber?.toString().length;
-  const isContinueTraining = purchase.numberOfVrGlasses === 0 && purchaseStatus?.orderStatus;
-  const isStartPackage = purchase.numberOfVrGlasses >= 1 && purchaseStatus?.orderStatus;
-  
-  if (orderNumberLength > 8) {
-    return <span className="italic">Admin</span>;
-  }
 
-  if(isContinueTraining || isStartPackage){
-    return <span className="text-purple-400 italic">Woo</span>;
-  }
-
-  // All other cases are imported orders
-   return <span className="italic">Imported</span>;
-};
 
 const SourceCell = ({ purchase, oldPurchases }: { 
   purchase: PurchaseObj, 
@@ -80,9 +67,20 @@ const SourceCell = ({ purchase, oldPurchases }: {
 }) => {
   const { purchaseStatuses } = usePurchaseStore();
   const purchaseStatus = purchaseStatuses[purchase.id];
-  
 
-  return <Purchase>{getSource(purchase, oldPurchases, purchaseStatus)}</Purchase>;
+  if (!purchaseStatus) {
+    return <Purchase><LoadingBars /></Purchase>;
+  }
+
+  const source = getSource(purchase, purchaseStatus);
+  
+  return (
+    <Purchase>
+      {source === 'Admin' && <span className="italic">Admin</span>}
+      {source === 'Woo' && <span className="text-purple-400 italic">Woo</span>}
+      {source === 'Imported' && <span className="italic">Imported</span>}
+    </Purchase>
+  );
 };
 
 export const renderCell = (purchase: PurchaseObj, columnKey: React.Key, oldPurchases?: Purchase[] = []) => {
