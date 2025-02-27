@@ -80,7 +80,6 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
 
   const filteredItems = useMemo(() => {
     let filteredPurchases = [...groupedPurchases];
-
     // Apply hidden filter
     if (!showHidden) {
       filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
@@ -94,18 +93,16 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
     // Apply source filter
     if (sourceFilter !== 'all') {
       filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
-        const { purchaseStatuses } = usePurchaseStore.getState();
-        const purchaseStatus = purchaseStatuses[recentPurchase.id];
-        return getSource(recentPurchase, purchaseStatus) === sourceFilter;
+        return getSource(recentPurchase) === sourceFilter;
       });
     }
 
     // Apply continue training filter
     if (showContinueTraining) {
-      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
-        const { purchaseStatuses } = usePurchaseStore.getState();
-        const purchaseStatus = purchaseStatuses[recentPurchase.id];
-        return recentPurchase.numberOfVrGlasses === 0 && purchaseStatus?.orderStatus;
+      filteredPurchases = filteredPurchases.filter(({ recentPurchase, oldPurchases }) => {
+        if(recentPurchase.additionalInfo.length > 0) {
+         return recentPurchase.additionalInfo[0].purchase_type === "CONTINUE_TRAINING" && oldPurchases.length > 0;
+        }
       });
     }
 

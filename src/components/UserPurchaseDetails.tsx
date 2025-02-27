@@ -350,7 +350,7 @@ export default function UserPurchaseDetails({
       placement="left"
       offset={-20}
       showArrow
-      delay={0}
+      delay={500}
       closeDelay={0}
       className="w-[500px]"
     >

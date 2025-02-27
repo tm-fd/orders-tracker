@@ -72,7 +72,7 @@ const SourceCell = ({ purchase, oldPurchases }: {
     return <Purchase><LoadingBars /></Purchase>;
   }
 
-  const source = getSource(purchase, purchaseStatus);
+  const source = getSource(purchase);
   
   return (
     <Purchase>

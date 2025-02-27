@@ -4,20 +4,22 @@ import { LoadingBars } from '@/components/icons';
 export type PurchaseSource = 'Admin' | 'Woo' | 'Imported';
 
 export const getSource = (
-  purchase: PurchaseObj, 
-  purchaseStatus?: any
+  purchase: PurchaseObj
 ): PurchaseSource => {
-  const orderNumberLength = purchase.orderNumber?.toString().length;
-  const isContinueTraining = purchase.numberOfVrGlasses === 0 && purchaseStatus?.orderStatus;
-  const isStartPackage = purchase.numberOfVrGlasses >= 1 && purchaseStatus?.orderStatus;
 
-  if (orderNumberLength > 8) {
-    return 'Admin';
+  if(purchase.additionalInfo.length > 0) {
+    if (purchase.additionalInfo[0].purchase_source === "ADMIN") {
+      return 'Admin';
+    }
+  
+    if (purchase.additionalInfo[0].purchase_source === "WEBSHOP") {
+      return 'Woo';
+    }
+
+    // if (purchase.additionalInfo[0].purchase_source === "IMPORTED") {
+    //   return 'Imported';
+    // }
   }
-
-  if (isContinueTraining || isStartPackage) {
-    return 'Woo';
-  }
-
   return 'Imported';
+  
 };

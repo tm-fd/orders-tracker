@@ -1,5 +1,5 @@
-'use client';
-import { useCallback, useState } from 'react';
+"use client";
+import { useCallback, useState } from "react";
 import {
   Modal,
   ModalContent,
@@ -15,70 +15,68 @@ import {
   SelectItem,
   Spinner,
 } from "@heroui/react";
-import axios from 'axios';
-import cryptoRandomString from 'crypto-random-string';
-import Joi from 'joi';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSWRConfig } from 'swr';
+import axios from "axios";
+import cryptoRandomString from "crypto-random-string";
+import Joi from "joi";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSWRConfig } from "swr";
 import { useSession } from "next-auth/react";
 
-
 export default function AddPurchase({ currentPage }) {
-  const { data: session } = useSession(); 
+  const { data: session } = useSession();
   const { mutate } = useSWRConfig();
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
-  const [duration, setDuration] = useState('');
+  const [duration, setDuration] = useState("");
   const startPackage = [
     {
-      key: '84',
-      label: '12 weeks',
+      key: "84",
+      label: "12 weeks",
     },
     {
-      key: '30',
-      label: 'Subscription',
+      key: "30",
+      label: "Subscription",
     },
   ];
 
   const continueTraining = [
     {
-      key: '42',
-      label: '6 weeks',
+      key: "42",
+      label: "6 weeks",
     },
     {
-      key: '84',
-      label: '12 weeks',
+      key: "84",
+      label: "12 weeks",
     },
     {
-      key: '180',
-      label: '6 months',
+      key: "180",
+      label: "6 months",
     },
     {
-      key: '360',
-      label: '12 months',
+      key: "360",
+      label: "12 months",
     },
   ];
-  const [email, setEmail] = useState('');
-  const [firstName, setFistname] = useState('');
-  const [lastName, setLastname] = useState('');
-  const [numberOfVrGlasses, setNumberOfVrGlasses] = useState('1');
-  const [numberOfLicenses, setNumberOfLicenses] = useState('1');
+  const [email, setEmail] = useState("");
+  const [firstName, setFistname] = useState("");
+  const [lastName, setLastname] = useState("");
+  const [numberOfVrGlasses, setNumberOfVrGlasses] = useState("1");
+  const [numberOfLicenses, setNumberOfLicenses] = useState("1");
   const [isSubscription, setIsSubscription] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
+  const [additionalInfo, setAdditionalInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [createWooCommerceOrder, setCreateWooCommerceOrder] = useState(false);
   const [couponCode, setCouponCode] = useState(null);
   const [shippingAddress, setShippingAddress] = useState({
-    address1: '',
-    address2: '',
-    city: '',
-    state: '',
-    postcode: '',
-    country: '',
-    phone: '',
+    address1: "",
+    address2: "",
+    city: "",
+    state: "",
+    postcode: "",
+    country: "",
+    phone: "",
   });
-  
 
   const handleSelectionChange = (e: any) => {
     setDuration(e.target.value);
@@ -91,30 +89,30 @@ export default function AddPurchase({ currentPage }) {
         .required()
         .trim()
         .messages({
-          'string.email': `Email must be valid`,
-          'string.required': `Email is required`,
+          "string.email": `Email must be valid`,
+          "string.required": `Email is required`,
         }),
       firstName: Joi.string().required().messages({
-        'string.required': `First Name is required`,
+        "string.required": `First Name is required`,
       }),
       lastName: Joi.string().required().messages({
-        'string.required': `Last Name is required`,
+        "string.required": `Last Name is required`,
       }),
       numberOfVrGlasses: Joi.number().min(0).max(1000).required().messages({
-        'number.min': `Number of VR glasses must be greater than or equal to 0`,
-        'number.required': `Number of VR glasses is required`,
+        "number.min": `Number of VR glasses must be greater than or equal to 0`,
+        "number.required": `Number of VR glasses is required`,
       }),
       numberOfLicenses: Joi.number().min(1).max(1000).required().messages({
-        'number.required': `Number of Licenses is required`,
-        'number.min': `Number of Licenses must be greater than or equal to 1`,
+        "number.required": `Number of Licenses is required`,
+        "number.min": `Number of Licenses must be greater than or equal to 1`,
       }),
       duration: Joi.number().min(1).required().messages({
-        'number.min': `Duration is required`,
+        "number.min": `Duration is required`,
       }),
       code: Joi.string().required(),
       orderNumber: Joi.string().required(),
       isSubscription: Joi.boolean().required(),
-      additionalInfo: Joi.string().allow('').optional(),
+      additionalInfo: Joi.string().allow("").optional(),
       additional_info: Joi.object().allow(null).optional(),
     };
 
@@ -122,23 +120,23 @@ export default function AddPurchase({ currentPage }) {
     if (obj.createWooCommerceOrder) {
       baseSchema.shippingAddress = Joi.object({
         address1: Joi.string().required().messages({
-          'string.required': 'Address Line 1 is required',
+          "string.required": "Address Line 1 is required",
         }),
-        address2: Joi.string().allow('').optional(),
+        address2: Joi.string().allow("").optional(),
         city: Joi.string().required().messages({
-          'string.required': 'City is required',
+          "string.required": "City is required",
         }),
         state: Joi.string().required().messages({
-          'string.required': 'State is required',
+          "string.required": "State is required",
         }),
         postcode: Joi.string().required().messages({
-          'string.required': 'Postal Code is required',
+          "string.required": "Postal Code is required",
         }),
         country: Joi.string().required().messages({
-          'string.required': 'Country is required',
+          "string.required": "Country is required",
         }),
         phone: Joi.string().required().messages({
-          'string.required': 'Phone is required',
+          "string.required": "Phone is required",
         }),
       }).required();
     }
@@ -149,12 +147,21 @@ export default function AddPurchase({ currentPage }) {
 
   const submitPurchase = useCallback(async () => {
     if (loading) return;
-    const orderNumber = cryptoRandomString({ length: 10, type: 'numeric' });
+    const orderNumber = cryptoRandomString({ length: 10, type: "numeric" });
     const code = cryptoRandomString({
       length: 4,
-      characters: '2346789abcdefghjkmnpqrtuvwxyzABCDEFGHJKMNPQRTUVWXYZ',
+      characters: "2346789abcdefghjkmnpqrtuvwxyzABCDEFGHJKMNPQRTUVWXYZ",
     });
 
+    const purchaseType = isSubscription
+      ? "SUBSCRIPTION"
+      : Number(duration) === 42 ||
+        Number(duration) === 180 ||
+        Number(duration) === 360 ||
+        (Number(duration) === 84 && Number(numberOfVrGlasses) === 0)
+      ? "CONTINUE_TRAINING"
+      : "START_PACKAGE";
+console.log((Number(duration) === 84 && Number(numberOfVrGlasses) === 0))
     const purchaseObj = {
       email,
       firstName,
@@ -166,7 +173,9 @@ export default function AddPurchase({ currentPage }) {
       duration: Number(duration),
       orderNumber,
       additional_info: {
-        info: additionalInfo
+        info: additionalInfo,
+        purchase_source: "ADMIN",
+        purchase_type: purchaseType,
       },
     };
 
@@ -187,7 +196,7 @@ export default function AddPurchase({ currentPage }) {
         {
           headers: {
             Authorization: `Bearer ${session?.user?.sessionToken}`,
-          }
+          },
         }
       );
 
@@ -197,15 +206,15 @@ export default function AddPurchase({ currentPage }) {
         if (createWooCommerceOrder) {
           try {
             const wooCommerceOrderData = {
-              payment_method: 'bacs',
-              payment_method_title: 'Unknown Payment Transfer',
+              payment_method: "bacs",
+              payment_method_title: "Unknown Payment Transfer",
               set_paid: true,
-              status: 'processing',
+              status: "processing",
               billing: {
                 first_name: firstName,
                 last_name: lastName,
                 address_1: shippingAddress.address1,
-                address_2: shippingAddress.address2 || '',
+                address_2: shippingAddress.address2 || "",
                 city: shippingAddress.city,
                 state: shippingAddress.state,
                 postcode: shippingAddress.postcode,
@@ -217,7 +226,7 @@ export default function AddPurchase({ currentPage }) {
                 first_name: firstName,
                 last_name: lastName,
                 address_1: shippingAddress.address1,
-                address_2: shippingAddress.address2 || '',
+                address_2: shippingAddress.address2 || "",
                 city: shippingAddress.city,
                 state: shippingAddress.state,
                 postcode: shippingAddress.postcode,
@@ -227,31 +236,30 @@ export default function AddPurchase({ currentPage }) {
                 {
                   product_id: process.env.VR_GLASSES_PRODUCT_ID,
                   quantity: Number(numberOfVrGlasses) || 0,
-                  total: !couponCode ? '0' : undefined
+                  total: !couponCode ? "0" : undefined,
                 },
                 {
                   product_id: process.env.LICENSE_PRODUCT_ID,
                   quantity: Number(numberOfLicenses),
-                  total: !couponCode ? '0' : undefined
+                  total: !couponCode ? "0" : undefined,
                 },
               ],
               shipping_lines: [
                 {
-                  method_id: 'flat_rate',
-                  method_title: 'Flat Rate',
-                  total: '0.00',
+                  method_id: "flat_rate",
+                  method_title: "Flat Rate",
+                  total: "0.00",
                 },
               ],
               meta_data: [
                 {
-                  key: '_activation_code',
+                  key: "_activation_code",
                   value: code,
                 },
                 {
-                  key: '_created_from_dashboard',
-                  value: 'true',
-                }
-            
+                  key: "_created_from_dashboard",
+                  value: "true",
+                },
               ],
               coupon_lines: couponCode ? [{ code: couponCode }] : [],
             };
@@ -277,15 +285,15 @@ export default function AddPurchase({ currentPage }) {
               wooCommerceRes.status !== 200 &&
               wooCommerceRes.status !== 201
             ) {
-              throw new Error('Failed to create WooCommerce order');
+              throw new Error("Failed to create WooCommerce order");
             }
           } catch (wooCommerceError) {
             console.error(
-              'Error creating WooCommerce order:',
+              "Error creating WooCommerce order:",
               wooCommerceError
             );
             setErrorMessage(
-              'Purchase added, but failed to create WooCommerce order. Please try creating the order manually.'
+              "Purchase added, but failed to create WooCommerce order. Please try creating the order manually."
             );
             setLoading(false);
             return;
@@ -300,8 +308,8 @@ export default function AddPurchase({ currentPage }) {
               { info: additionalInfo },
               {
                 headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session?.user?.sessionToken}`,
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session?.user?.sessionToken}`,
                 },
               }
             );
@@ -310,12 +318,12 @@ export default function AddPurchase({ currentPage }) {
               additionalInfoRes.status !== 200 &&
               additionalInfoRes.status !== 201
             ) {
-              throw new Error('Failed to add additional info');
+              throw new Error("Failed to add additional info");
             }
           } catch (additionalInfoError) {
-            console.error('Error adding additional info:', additionalInfoError);
+            console.error("Error adding additional info:", additionalInfoError);
             setErrorMessage(
-              'Purchase added, but failed to add additional info. Please try updating the purchase later.'
+              "Purchase added, but failed to add additional info. Please try updating the purchase later."
             );
             setLoading(false);
             return;
@@ -325,32 +333,32 @@ export default function AddPurchase({ currentPage }) {
         setLoading(false);
         setIsSubmitted(true);
         mutate([
-          '/purchases',
+          "/purchases",
           {
             limit: 370,
             page: currentPage,
           },
         ]);
-        setErrorMessage('The purchase has been added successfully');
+        setErrorMessage("The purchase has been added successfully");
 
         // Clear all form fields
-        setEmail('');
-        setFistname('');
-        setLastname('');
-        setNumberOfVrGlasses('');
-        setNumberOfLicenses('');
+        setEmail("");
+        setFistname("");
+        setLastname("");
+        setNumberOfVrGlasses("");
+        setNumberOfLicenses("");
         setIsSubscription(false);
-        setDuration('');
-        setAdditionalInfo('');
+        setDuration("");
+        setAdditionalInfo("");
         setCreateWooCommerceOrder(false);
         setShippingAddress({
-          address1: '',
-          address2: '',
-          city: '',
-          state: '',
-          postcode: '',
-          country: '',
-          phone: '',
+          address1: "",
+          address2: "",
+          city: "",
+          state: "",
+          postcode: "",
+          country: "",
+          phone: "",
         });
 
         setTimeout(() => {
@@ -366,11 +374,11 @@ export default function AddPurchase({ currentPage }) {
       setLoading(false);
       if (error.response) {
         setErrorMessage(
-          `Error: ${error.response.data.message || 'Server error'}`
+          `Error: ${error.response.data.message || "Server error"}`
         );
       } else if (error.request) {
         setErrorMessage(
-          'Error: No response from server. Please check your internet connection.'
+          "Error: No response from server. Please check your internet connection."
         );
       } else {
         setErrorMessage(`Error: ${error.message}`);
@@ -407,7 +415,7 @@ export default function AddPurchase({ currentPage }) {
           isOpen={isOpen}
           onClose={onClose}
           placement="top-center"
-          classNames={{ closeButton: 'hidden' }}
+          classNames={{ closeButton: "hidden" }}
           className="bg-transparent shadow-none"
           isDismissable={false}
           shadow="sm"
@@ -450,8 +458,8 @@ export default function AddPurchase({ currentPage }) {
                       <ModalHeader
                         className={`flex flex-col gap-1 ${
                           isSubmitted
-                            ? 'bg-green-500 text-green-50'
-                            : 'bg-warning-100 text-warning-700'
+                            ? "bg-green-500 text-green-50"
+                            : "bg-warning-100 text-warning-700"
                         }`}
                       >
                         {errorMessage}
@@ -519,7 +527,7 @@ export default function AddPurchase({ currentPage }) {
                 <Select
                   label="Duration"
                   placeholder="Select an duration"
-                  defaultSelectedKeys={['84']}
+                  defaultSelectedKeys={["84"]}
                   selectedKeys={[duration]}
                   onChange={handleSelectionChange}
                   className="max-w-xs"
@@ -645,7 +653,9 @@ export default function AddPurchase({ currentPage }) {
                 <Button color="danger" variant="flat" onPress={onClose}>
                   Close
                 </Button>
-                <Button className="bg-blue-700" onPress={submitPurchase}
+                <Button
+                  className="bg-blue-700"
+                  onPress={submitPurchase}
                   isDisabled={loading}
                 >
                   Submit
