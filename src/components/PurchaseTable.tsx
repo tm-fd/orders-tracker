@@ -12,15 +12,18 @@ import {
   Checkbox,
   Tooltip,
 } from "@heroui/react";
-
 import { Purchase, columns, renderCell } from '../app/purchases/columns';
 import { SearchIcon } from './icons';
 import usePurchaseStore from '../app/store/purchaseStore';
+import { getSource, PurchaseSource } from '@/app/utils';
 
 export default function PurchaseTable() {
   const { purchases } = usePurchaseStore();
   const [filterValue, setFilterValue] = useState('');
   const [showHidden, setShowHidden] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+const [showContinueTraining, setShowContinueTraining] = useState(false);
+const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
 
   const hasSearchFilter = Boolean(filterValue);
 
@@ -87,6 +90,29 @@ export default function PurchaseTable() {
       });
     }
 
+    // Apply source filter
+    if (sourceFilter !== 'all') {
+      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
+        return getSource(recentPurchase) === sourceFilter;
+      });
+    }
+
+    // Apply continue training filter
+    if (showContinueTraining) {
+      filteredPurchases = filteredPurchases.filter(({ recentPurchase, oldPurchases }) => {
+        if(recentPurchase.additionalInfo.length > 0) {
+         return recentPurchase.additionalInfo[0].purchase_type === "CONTINUE_TRAINING" && oldPurchases.length > 0;
+        }
+      });
+    }
+
+    // Apply multiple licenses filter
+    if (showMultipleLicenses) {
+      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => 
+        recentPurchase.numberOfLicenses > 1
+      );
+    }
+
     // Apply search filter
     if (hasSearchFilter) {
       filteredPurchases = filteredPurchases.filter(({ recentPurchase }) =>
@@ -95,7 +121,9 @@ export default function PurchaseTable() {
     }
 
     return filteredPurchases;
-  }, [groupedPurchases, filterValue, hasSearchFilter, showHidden]);
+  }, [groupedPurchases, filterValue, hasSearchFilter, showHidden, sourceFilter, showContinueTraining, showMultipleLicenses]);
+
+  
 
   const rowsPerPage = 20;
   const [page, setPage] = useState(1);
@@ -144,26 +172,55 @@ export default function PurchaseTable() {
     return (
       <div className="flex flex-col gap-4">
         <div className="flex items-end justify-between gap-3">
-          <Input
-            isClearable
-            className="w-full sm:max-w-[44%]"
-            placeholder="Search by anything..."
-            startContent={<SearchIcon />}
-            value={filterValue}
-            onClear={() => onClear()}
-            onValueChange={onSearchChange}
-          />
-          <Checkbox
-            isSelected={showHidden}
-            onValueChange={setShowHidden}
-            color="secondary"
-          >
-            Show Hidden Purchases
-          </Checkbox>
+          <div className="flex gap-3 flex-1">
+            <Input
+              isClearable
+              className="w-full sm:max-w-[44%]"
+              placeholder="Search by anything..."
+              startContent={<SearchIcon />}
+              value={filterValue}
+              onClear={() => onClear()}
+              onValueChange={onSearchChange}
+            />
+            <select
+              className="px-3 py-2 rounded-md border border-gray-300"
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value as PurchaseSource | 'all')}
+            >
+              <option value="all">All Sources</option>
+              <option value="Admin">Admin</option>
+              <option value="Woo">Woo</option>
+              <option value="Imported">Imported</option>
+            </select>
+          </div>
+          <div className="flex gap-3">
+            <Checkbox
+              isSelected={showContinueTraining}
+              onValueChange={setShowContinueTraining}
+              color="secondary"
+            >
+              Continue Training
+            </Checkbox>
+            <Checkbox
+              isSelected={showMultipleLicenses}
+              onValueChange={setShowMultipleLicenses}
+              color="secondary"
+            >
+              Multiple Licenses
+            </Checkbox>
+            <Checkbox
+              isSelected={showHidden}
+              onValueChange={setShowHidden}
+              color="secondary"
+            >
+              Show Hidden
+            </Checkbox>
+          </div>
         </div>
       </div>
     );
-  }, [filterValue, onSearchChange, onClear, showHidden]);
+  }, [filterValue, onSearchChange, onClear, showHidden, sourceFilter, showContinueTraining, showMultipleLicenses]);
+
 
   const handlePaginationChange = (page) => {
     setPage(page);
