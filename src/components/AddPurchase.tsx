@@ -21,12 +21,15 @@ import Joi from "joi";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSWRConfig } from "swr";
 import { useSession } from "next-auth/react";
+import usePurchaseStore from "@/app/store/purchaseStore";
 
 export default function AddPurchase({ currentPage }) {
   const { data: session } = useSession();
   const { mutate } = useSWRConfig();
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
   const [duration, setDuration] = useState("");
+  const addPurchase = usePurchaseStore((state) => state.addPurchase);
+
   const startPackage = [
     {
       key: "84",
@@ -161,7 +164,7 @@ export default function AddPurchase({ currentPage }) {
         (Number(duration) === 84 && Number(numberOfVrGlasses) === 0)
       ? "CONTINUE_TRAINING"
       : "START_PACKAGE";
-console.log((Number(duration) === 84 && Number(numberOfVrGlasses) === 0))
+    console.log(Number(duration) === 84 && Number(numberOfVrGlasses) === 0);
     const purchaseObj = {
       email,
       firstName,
@@ -299,13 +302,16 @@ console.log((Number(duration) === 84 && Number(numberOfVrGlasses) === 0))
             return;
           }
         }
-
         // Handle additional info if present
         if (additionalInfo) {
           try {
-            const additionalInfoRes = await axios.post(
+             const additionalInfoRes = await axios.post(
               `${process.env.CLOUDRUN_DEV_URL}/purchases/additional-info/${purchaseId}`,
-              { info: additionalInfo },
+              {
+                info: additionalInfo,
+                purchase_source: "ADMIN",
+                purchase_type: purchaseType,
+              },
               {
                 headers: {
                   "Content-Type": "application/json",
@@ -313,7 +319,7 @@ console.log((Number(duration) === 84 && Number(numberOfVrGlasses) === 0))
                 },
               }
             );
-
+            
             if (
               additionalInfoRes.status !== 200 &&
               additionalInfoRes.status !== 201
@@ -328,10 +334,28 @@ console.log((Number(duration) === 84 && Number(numberOfVrGlasses) === 0))
             setLoading(false);
             return;
           }
+          
         }
+        addPurchase({
+          id: purchaseId,
+          orderNumber,
+          email,
+          customerName: firstName + " " + lastName,
+          date: purchaseRes.data.created_at,
+          updatedDate: purchaseRes.data.updated_at,
+          confirmationCode: code,
+          numberOfVrGlasses: Number(numberOfLicenses),
+          numberOfLicenses: Number(numberOfLicenses),
+          isSubscription: isSubscription,
+          duration: Number(duration),
+          additionalInfo: [{
+            info: additionalInfo,
+            purchase_source: "ADMIN",
+            purchase_type: purchaseType,
+          }],
+        });
 
-        setLoading(false);
-        setIsSubmitted(true);
+        // Then mutate SWR cache
         mutate([
           "/purchases",
           {
@@ -339,6 +363,9 @@ console.log((Number(duration) === 84 && Number(numberOfVrGlasses) === 0))
             page: currentPage,
           },
         ]);
+
+        setLoading(false);
+        setIsSubmitted(true);
         setErrorMessage("The purchase has been added successfully");
 
         // Clear all form fields

@@ -1,10 +1,12 @@
 // EditPurchase.tsx
 import React, { useState } from 'react';
 import { Input, Button, Switch } from "@heroui/react";
-import { PurchaseObj } from '../app/store/purchaseStore';
+import { PurchaseObj } from '@/app/store/purchaseStore';
 import { useEditPurchase, useAdditionalInfo } from '@/app/hooks';
 import { mutate } from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
+import usePurchaseStore from '@/app/store/purchaseStore';
+
 
 interface EditPurchaseProps {
   purchase: PurchaseObj;
@@ -15,6 +17,7 @@ export function EditPurchase({ purchase, onClose }: EditPurchaseProps) {
   const [editedPurchase, setEditedPurchase] = useState(purchase);
   const [loading, setLoading] = useState(false);
   const { updatePurchase, errorMessage, setErrorMessage } = useEditPurchase();
+  const updatePurchaseStore = usePurchaseStore((state) => state.updatePurchase);
   const {
     additionalInfos,
     editAdditionalInfo,
@@ -29,6 +32,7 @@ export function EditPurchase({ purchase, onClose }: EditPurchaseProps) {
     }));
   };
 
+
   const handleSave = async () => {
     try {
       setLoading(true);
@@ -39,9 +43,31 @@ export function EditPurchase({ purchase, onClose }: EditPurchaseProps) {
       }
 
       if (updatedPurchase) {
+        const purchaseForStore: PurchaseObj = {
+          id: editedPurchase.id,
+          orderNumber: editedPurchase.orderNumber,
+          email: editedPurchase.email,
+          customerName: editedPurchase.customerName, 
+          date: editedPurchase.date,
+          updatedDate: new Date().toISOString(),
+          confirmationCode: editedPurchase.confirmationCode,
+          numberOfVrGlasses: editedPurchase.numberOfVrGlasses,
+          numberOfLicenses: editedPurchase.numberOfLicenses,
+          isSubscription: editedPurchase.isSubscription,
+          duration: editedPurchase.duration,
+          additionalInfo: [{
+            info: additionalInfos.length > 0 ? editedAdditionalInfos : '',
+            purchase_source: "ADMIN",
+          }],
+        };
+        updatePurchaseStore(purchaseForStore);
         setErrorMessage('The purchase has been updated successfully');
         setIsSubmitted(true);
-        mutate('/purchases');
+        await mutate(
+          (key) => typeof key === 'string' && key.startsWith('/purchases'),
+          undefined,
+          { revalidate: true }
+        );
         setTimeout(() => {
           setErrorMessage(null);
           setIsSubmitted(false);

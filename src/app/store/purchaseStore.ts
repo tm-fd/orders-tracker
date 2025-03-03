@@ -58,7 +58,10 @@ interface Actions {
   setIsLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   setCurrentPage: (page: number) => void;
+  addPurchase: (purchase: ZPurchase) => void;
+  updatePurchase: (updatedPurchase: PurchaseObj) => void;
   reset: () => void;
+
 }
 
 const initialState: State = {
@@ -84,6 +87,14 @@ const usePurchaseStore = create<State & Actions>()(
       setIsLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
       setCurrentPage: (currentPage) => set({ currentPage }),
+      addPurchase: (purchase) => set((state) => ({
+        purchases: [purchase, ...state.purchases],
+      })),
+      updatePurchase: (updatedPurchase) => set((state) => ({
+        purchases: state.purchases.map((purchase) =>
+          purchase.id === updatedPurchase.id ? updatedPurchase : purchase
+        ),
+      })),
       reset: () => set(initialState),
     }),
     {

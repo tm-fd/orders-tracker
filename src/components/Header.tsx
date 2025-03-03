@@ -15,9 +15,14 @@ const NavigationList = ({ user }: { user: any }) => {
         <Link href="/purchases">Users</Link>
       </li>
       {user && (
+        <>
         <li>
           <Link href="/register">Register admin</Link>
         </li>
+        <li>
+        <Link href="/dashboard">Dashboard</Link>
+      </li>
+      </>
       )}
     </ul>
   );
