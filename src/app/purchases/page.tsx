@@ -80,7 +80,7 @@ export default function Purshases() {
     <section className="py-24">
       <div className="container flex flex-col items-center justify-center">
         <div className="flex items-center justify-between w-full mb-6">
-        <Button onPress={() => router.push('/dashboard')} className="bg-blue-700">Dashboard</Button>
+        {/*<Button onPress={() => router.push('/dashboard')} className="bg-blue-700">Dashboard</Button>*/}
           <AddPurchase currentPage={currentPage} />
         </div>
         {isLoading || !data || purchases.length === 0 ? (
