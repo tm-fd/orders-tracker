@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import PurchaseTable from '../../components/PurchaseTable';
 import { ZPurchase } from '../store/purchaseStore';
-import { Spinner } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import AddPurchase from '../../components/AddPurchase';
 import usePurchaseStore from '../store/purchaseStore';
 import { useRouter } from 'next/navigation';
@@ -79,7 +79,8 @@ export default function Purshases() {
   return (
     <section className="py-24">
       <div className="container flex flex-col items-center justify-center">
-        <div className="ml-auto">
+        <div className="flex items-center justify-between w-full mb-6">
+        {/*<Button onPress={() => router.push('/dashboard')} className="bg-blue-700">Dashboard</Button>*/}
           <AddPurchase currentPage={currentPage} />
         </div>
         {isLoading || !data || purchases.length === 0 ? (

@@ -5,5 +5,11 @@ export const swrConfig = {
   revalidateOnFocus: true,
   revalidateOnReconnect: true,
   revalidateIfStale: true,
-  refreshInterval: 600000
+  refreshInterval: 600000,
+  dedupingInterval: 2000,
+  mutate: {
+    rollbackOnError: true,
+    populateCache: true,
+    revalidate: false,
+  },
 };

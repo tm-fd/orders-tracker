@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from "react";
 import {
   Table,
   TableHeader,
@@ -12,18 +12,18 @@ import {
   Checkbox,
   Tooltip,
 } from "@heroui/react";
-import { Purchase, columns, renderCell } from '../app/purchases/columns';
-import { SearchIcon } from './icons';
-import usePurchaseStore from '../app/store/purchaseStore';
-import { getSource, PurchaseSource } from '@/app/utils';
+import { Purchase, columns, renderCell } from "../app/purchases/columns";
+import { SearchIcon } from "./icons";
+import usePurchaseStore from "../app/store/purchaseStore";
+import { getSource, PurchaseSource } from "@/app/utils";
 
 export default function PurchaseTable() {
   const { purchases } = usePurchaseStore();
-  const [filterValue, setFilterValue] = useState('');
+  const [filterValue, setFilterValue] = useState("");
   const [showHidden, setShowHidden] = useState(false);
-  const [sourceFilter, setSourceFilter] = useState<string>('all');
-const [showContinueTraining, setShowContinueTraining] = useState(false);
-const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [showContinueTraining, setShowContinueTraining] = useState(false);
+  const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
 
   const hasSearchFilter = Boolean(filterValue);
 
@@ -32,7 +32,7 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
 
     const searchInObject = (obj: any) => {
       for (const key in obj) {
-        if (typeof obj[key] === 'object' && obj[key] !== null) {
+        if (typeof obj[key] === "object" && obj[key] !== null) {
           if (searchInObject(obj[key])) return true;
         } else if (Array.isArray(obj[key])) {
           for (const item of obj[key]) {
@@ -91,7 +91,7 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
     }
 
     // Apply source filter
-    if (sourceFilter !== 'all') {
+    if (sourceFilter !== "all") {
       filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
         return getSource(recentPurchase) === sourceFilter;
       });
@@ -99,17 +99,26 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
 
     // Apply continue training filter
     if (showContinueTraining) {
-      filteredPurchases = filteredPurchases.filter(({ recentPurchase, oldPurchases }) => {
-        if(recentPurchase.additionalInfo.length > 0) {
-         return recentPurchase.additionalInfo[0].purchase_type === "CONTINUE_TRAINING" && oldPurchases.length > 0;
+      filteredPurchases = filteredPurchases.filter(
+        ({ recentPurchase, oldPurchases }) => {
+          if (recentPurchase.additionalInfo.length > 0) {
+            return (
+              (recentPurchase.additionalInfo[0].purchase_type ===
+                "CONTINUE_TRAINING" &&
+                oldPurchases.length > 0) ||
+              (recentPurchase.additionalInfo[0].purchase_type ===
+                "SUBSCRIPTION" &&
+                oldPurchases.length > 0)
+            );
+          }
         }
-      });
+      );
     }
 
     // Apply multiple licenses filter
     if (showMultipleLicenses) {
-      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => 
-        recentPurchase.numberOfLicenses > 1
+      filteredPurchases = filteredPurchases.filter(
+        ({ recentPurchase }) => recentPurchase.numberOfLicenses > 1
       );
     }
 
@@ -121,9 +130,15 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
     }
 
     return filteredPurchases;
-  }, [groupedPurchases, filterValue, hasSearchFilter, showHidden, sourceFilter, showContinueTraining, showMultipleLicenses]);
-
-  
+  }, [
+    groupedPurchases,
+    filterValue,
+    hasSearchFilter,
+    showHidden,
+    sourceFilter,
+    showContinueTraining,
+    showMultipleLicenses,
+  ]);
 
   const rowsPerPage = 20;
   const [page, setPage] = useState(1);
@@ -136,8 +151,8 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
   }, [page, filteredItems]);
 
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
-    column: 'date',
-    direction: 'descending',
+    column: "date",
+    direction: "descending",
   });
 
   const sortedItems = useMemo(() => {
@@ -150,7 +165,7 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
       ] as string;
       const cmp = first < second ? -1 : first > second ? 1 : 0;
 
-      return sortDescriptor.direction === 'descending' ? -cmp : cmp;
+      return sortDescriptor.direction === "descending" ? -cmp : cmp;
     });
   }, [sortDescriptor, items]);
 
@@ -159,12 +174,12 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
       setFilterValue(value);
       setPage(1);
     } else {
-      setFilterValue('');
+      setFilterValue("");
     }
   }, []);
 
   const onClear = useCallback(() => {
-    setFilterValue('');
+    setFilterValue("");
     setPage(1);
   }, []);
 
@@ -185,7 +200,9 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
             <select
               className="px-3 py-2 rounded-md border border-gray-300"
               value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value as PurchaseSource | 'all')}
+              onChange={(e) =>
+                setSourceFilter(e.target.value as PurchaseSource | "all")
+              }
             >
               <option value="all">All Sources</option>
               <option value="Admin">Admin</option>
@@ -219,8 +236,15 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
         </div>
       </div>
     );
-  }, [filterValue, onSearchChange, onClear, showHidden, sourceFilter, showContinueTraining, showMultipleLicenses]);
-
+  }, [
+    filterValue,
+    onSearchChange,
+    onClear,
+    showHidden,
+    sourceFilter,
+    showContinueTraining,
+    showMultipleLicenses,
+  ]);
 
   const handlePaginationChange = (page) => {
     setPage(page);
@@ -251,18 +275,18 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
         sortDescriptor={sortDescriptor}
         onSortChange={setSortDescriptor}
         classNames={{
-          wrapper: 'min-h-[222px]',
+          wrapper: "min-h-[222px]",
         }}
       >
         <TableHeader columns={columns}>
           {(column) => (
             <TableColumn
               key={column.key}
-              {...(column.key === 'date' ? { allowsSorting: true } : {})}
+              {...(column.key === "date" ? { allowsSorting: true } : {})}
             >
               <div className="flex items-center gap-2">
                 {column.label}
-                {column.key === 'actions' && (
+                {column.key === "actions" && (
                   <Tooltip
                     content={
                       <div className="px-1 py-2">
@@ -304,7 +328,7 @@ const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
         </TableHeader>
         <TableBody
           items={sortedItems}
-          emptyContent={'No purchases to display.'}
+          emptyContent={"No purchases to display."}
         >
           {(item) => (
             <TableRow key={item.recentPurchase.id}>

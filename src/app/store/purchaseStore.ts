@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type {RangeValue} from "@react-types/shared";
+import type {DateValue} from "@react-types/datepicker";
 
 export interface ZPurchase {
   id: number;
@@ -34,7 +36,6 @@ interface PurchaseStatus {
   orderStatus: any | null;
   orderEmail: string | null;
   shippingInfo: any | null;
-  isComplete: boolean;
   activationRecords: any[];
   hasOrderStatus_email: boolean;
   isActivated_VReceived: boolean;
@@ -58,6 +59,9 @@ interface Actions {
   setIsLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   setCurrentPage: (page: number) => void;
+  addPurchase: (purchase: ZPurchase) => void;
+  updatePurchase: (updatedPurchase: PurchaseObj) => void;
+  fetchPurchaseStatusesByDateRange: (startDate: Date, endDate: Date) => Promise<void>;
   reset: () => void;
 }
 
@@ -84,6 +88,32 @@ const usePurchaseStore = create<State & Actions>()(
       setIsLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
       setCurrentPage: (currentPage) => set({ currentPage }),
+      addPurchase: (purchase) => set((state) => ({
+        purchases: [purchase, ...state.purchases],
+      })),
+      updatePurchase: (updatedPurchase) => set((state) => ({
+        purchases: state.purchases.map((purchase) =>
+          purchase.id === updatedPurchase.id ? updatedPurchase : purchase
+        ),
+      })),
+      fetchPurchaseStatusesByDateRange: async (startDate, endDate) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch(
+            `${process.env.CLOUDRUN_DEV_URL}/purchases/all-info-by-date-range?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+          );
+          if (!response.ok) {
+            throw new Error('Failed to fetch purchase statuses');
+          }
+  
+          const data = await response.json();
+          set({ purchaseStatuses: data });
+        } catch (error) {
+          set({ error: error.message });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
       reset: () => set(initialState),
     }),
     {

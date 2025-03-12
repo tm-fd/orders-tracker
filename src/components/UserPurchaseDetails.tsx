@@ -36,25 +36,7 @@ export default function UserPurchaseDetails({
     setIsLoading,
   } = usePurchaseStore();
   const purchaseStatus = purchaseStatuses[Number(purchase.id)];
-  const fetchUserFirestoreData = async (
-    uuid: string
-  ): Promise<UserFirestoreData | null> => {
-    try {
-      const response = await fetch(`/api/userData/${uuid}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error('Failed to fetch user data');
-      }
-      const userData = await response.json();
-      return userData as UserFirestoreData;
-    } catch (error) {
-      console.error(`Error fetching Firestore data for user ${uuid}:`, error);
-      return null;
-    }
-  };
-
+  
   const fetchActivationRecord = async (purchaseId: number) => {
     try {
       const res = await fetch(
@@ -76,23 +58,9 @@ export default function UserPurchaseDetails({
       }
 
       const response = await res.json();
-
+      console.log(response)
       if (response && Array.isArray(response)) {
-        const recordsWithFirestoreData = await Promise.all(
-          response.map(async (record) => {
-            if (record?.user_id) {
-              const firestoreData = await fetchUserFirestoreData(
-                record.user.uuid
-              );
-              return {
-                ...record,
-                firestoreData,
-              };
-            }
-            return record;
-          })
-        );
-        return recordsWithFirestoreData;
+        return response;
       }
       return [];
     } catch (err) {
@@ -140,24 +108,24 @@ export default function UserPurchaseDetails({
         }
         // Fetch order email
         let orderEmail = null;
-        // try {
-        //   const emailRes = await fetch('/api/handleOrdersEmail', {
-        //     cache: 'no-store',
-        //   });
-        //   if (emailRes.ok) {
-        //     const emailData = await emailRes.json();
-        //     const sentEmails = emailData.filter(
-        //       (emailObj) => emailObj.ContactAlt === purchase.email.toLowerCase()
-        //     );
-        //     orderEmail = sentEmails.find(
-        //       (email) =>
-        //         email.Subject === 'Tack för din order från imvi labs!' ||
-        //         email.Subject.includes('förnyelseorder')
-        //     )?.Status;
-        //   }
-        // } catch (emailError) {
-        //   console.error('Error fetching order email:', emailError);
-        // }
+        try {
+          const emailRes = await fetch('/api/handleOrdersEmail', {
+            cache: 'no-store',
+          });
+          if (emailRes.ok) {
+            const emailData = await emailRes.json();
+            const sentEmails = emailData.filter(
+              (emailObj) => emailObj.ContactAlt === purchase.email.toLowerCase()
+            );
+            orderEmail = sentEmails.find(
+              (email) =>
+                email.Subject === 'Tack för din order från imvi labs!' ||
+                email.Subject.includes('förnyelseorder')
+            )?.Status;
+          }
+        } catch (emailError) {
+          console.error('Error fetching order email:', emailError);
+        }
 
         let shippingInfo = null;
         try {
@@ -225,13 +193,9 @@ export default function UserPurchaseDetails({
           }
         }
         const activationRecords = await fetchActivationRecord(purchase.id);
-
-        const isInvalidAccount = Boolean(
-          activationRecords[0]?.firestoreData?.ValidTill &&
-            moment
-              .unix(activationRecords[0]?.firestoreData?.ValidTill._seconds)
-              .isBefore(moment())
-        );
+        const validUntil = activationRecords[0]?.user?.valid_until;
+        const isInvalidAccount = validUntil ? moment(validUntil).isAfter(moment()) : false;
+        
 
         const hasOrderStatus_email = Boolean(
           orderStatus &&
@@ -242,8 +206,8 @@ export default function UserPurchaseDetails({
         const startedTraining = Boolean(
           activationRecords &&
             activationRecords.length > 0 &&
-            activationRecords[0]?.firestoreData?.TrainingStartedOn &&
-            !isInvalidAccount
+            activationRecords[0]?.user?.training_session_data?.length > 0 &&
+            isInvalidAccount
         );
 
         const startedTraining_with_VR = Boolean(
@@ -252,8 +216,8 @@ export default function UserPurchaseDetails({
             shippingInfo && (shippingInfo.status === 'DELIVERED' || shippingInfo.status?.statusCode === 'delivered') &&
           activationRecords &&
             activationRecords.length > 0 &&
-            activationRecords[0]?.firestoreData?.TrainingStartedOn &&
-            !isInvalidAccount
+            activationRecords[0]?.user?.training_session_data?.length > 0 &&
+            isInvalidAccount
         );
         
       
@@ -264,8 +228,8 @@ export default function UserPurchaseDetails({
             shippingInfo && (shippingInfo.status === 'DELIVERED' || shippingInfo.status?.statusCode === 'delivered') &&
             activationRecords &&
             activationRecords.length > 0 &&
-            !activationRecords[0]?.firestoreData?.TrainingStartedOn &&
-            !isInvalidAccount
+            !activationRecords[0]?.user?.training_session_data?.length > 0 &&
+            isInvalidAccount
         );
 
         const isActivated_and_VR_not_delivered = Boolean(
@@ -274,8 +238,8 @@ export default function UserPurchaseDetails({
             shippingInfo && shippingInfo.status !== 'DELIVERED' &&
             activationRecords &&
             activationRecords.length > 0 &&
-            !activationRecords[0]?.firestoreData?.TrainingStartedOn &&
-            !isInvalidAccount
+            !activationRecords[0]?.user?.training_session_data?.length > 0 &&
+            isInvalidAccount
         );
 
         
