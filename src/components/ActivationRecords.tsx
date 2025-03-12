@@ -228,10 +228,9 @@ export default function ActivationRecords({
                     )}
                   </TableCell>
                   <TableCell>
-                    {record.firestoreData?.TrainingStartedOn?._seconds
-                      ? moment
-                          .unix(record.firestoreData.TrainingStartedOn._seconds)
-                          .format('DD/MM/YYYY')
+                    {record.user?.training_session_data?.length > 0
+                      ? moment(record.user?.training_session_data[0].start_time)
+                      .format('DD/MM/YYYY')
                       : '-'}
                   </TableCell>
                 </TableRow>

@@ -103,8 +103,12 @@ export default function PurchaseTable() {
         ({ recentPurchase, oldPurchases }) => {
           if (recentPurchase.additionalInfo.length > 0) {
             return (
-              recentPurchase.additionalInfo[0].purchase_type ===
-                "CONTINUE_TRAINING" && oldPurchases.length > 0
+              (recentPurchase.additionalInfo[0].purchase_type ===
+                "CONTINUE_TRAINING" &&
+                oldPurchases.length > 0) ||
+              (recentPurchase.additionalInfo[0].purchase_type ===
+                "SUBSCRIPTION" &&
+                oldPurchases.length > 0)
             );
           }
         }

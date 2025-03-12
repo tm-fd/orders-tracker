@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/getSession";
 
 export default async function DashboardLayout({
@@ -9,8 +9,8 @@ export default async function DashboardLayout({
   const session = await getSession();
 
   if (!session) {
-    redirect('/login');
+    redirect("/login");
   }
 
-  return <>{children}</>;
+  return <main className="min-h-screen w-full">{children}</main>;
 }

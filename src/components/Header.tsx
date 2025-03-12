@@ -19,9 +19,6 @@ const NavigationList = ({ user }: { user: any }) => {
         <li>
           <Link href="/register">Register admin</Link>
         </li>
-        <li>
-        <Link href="/dashboard">Dashboard</Link>
-      </li>
       </>
       )}
     </ul>
