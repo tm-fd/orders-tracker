@@ -19,13 +19,12 @@ import axios from "axios";
 import cryptoRandomString from "crypto-random-string";
 import Joi from "joi";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSWRConfig } from "swr";
+import { mutate } from "swr";
 import { useSession } from "next-auth/react";
 import usePurchaseStore from "@/app/store/purchaseStore";
 
 export default function AddPurchase({ currentPage }) {
   const { data: session } = useSession();
-  const { mutate } = useSWRConfig();
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
   const [duration, setDuration] = useState("");
   const addPurchase = usePurchaseStore((state) => state.addPurchase);
@@ -363,7 +362,7 @@ export default function AddPurchase({ currentPage }) {
             page: currentPage,
           },
         ]);
-
+        
         setLoading(false);
         setIsSubmitted(true);
         setErrorMessage("The purchase has been added successfully");

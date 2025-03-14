@@ -111,7 +111,8 @@ const usePurchaseStore = create<State & Actions>()(
         } catch (error) {
           set({ error: error.message });
         } finally {
-          set({ isLoading: false });
+          // setTimeout(() => set({ isLoading: false }), 2000);
+           set({ isLoading: false });
         }
       },
       reset: () => set(initialState),
