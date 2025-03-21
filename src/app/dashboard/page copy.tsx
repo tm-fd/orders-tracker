@@ -67,7 +67,7 @@ export default function DashboardPage() {
   const [datePrecision, setDatePrecision] = useState("exact_dates");
 
   useEffect(() => {
-    console.log(purchaseStatuses);
+    // console.log(purchaseStatuses);
     if (!isLoading && Object.keys(purchaseStatuses).length > 0) {
       updateUserStatusCounts();
     }
@@ -299,8 +299,8 @@ export default function DashboardPage() {
           </CardBody>
         </Card>
       </div>
-      <PurchaseTrends dateRange={dateRange} />
-      <ActivationsTrend dateRange={dateRange} />
+      <PurchaseTrends purchaseStatuses={purchaseStatuses} />
+      <ActivationsTrend purchaseStatuses={purchaseStatuses} />
     </div>
   );
 }
