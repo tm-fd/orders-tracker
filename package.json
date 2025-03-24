@@ -30,6 +30,7 @@
     "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "@svgr/webpack": "^8.1.0",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",

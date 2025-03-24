@@ -60,7 +60,7 @@ export default function DashboardPage() {
   const [chartData, setChartData] = useState([]);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>({
-    start: parseDate(moment().subtract(30, "days").format("YYYY-MM-DD")),
+    start: parseDate(moment().subtract(360, "days").format("YYYY-MM-DD")),
     end: parseDate(moment().format("YYYY-MM-DD")),
   });
  

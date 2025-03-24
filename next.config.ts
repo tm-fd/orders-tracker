@@ -33,6 +33,10 @@ const nextConfig: NextConfig = {
     WOO_API_SECERT: process.env.WOO_API_SECERT,
   },
   webpack: (config, { isServer }) => {
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ['@svgr/webpack'],
+    });
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
