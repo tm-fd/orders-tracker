@@ -31,7 +31,7 @@ import {
   ComposedChart,
   Area,
 } from "recharts";
-import usePurchaseStore from "@/app/store/purchaseStore";
+import usePurchaseStore from "@/store/purchaseStore";
 import { DatePickerIcon } from "@/components/icons";
 import { data } from "framer-motion/client";
 import type { RangeValue } from "@react-types/shared";

@@ -1,10 +1,10 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import PurchaseTable from '../../components/PurchaseTable';
-import { ZPurchase } from '../store/purchaseStore';
+import { ZPurchase } from '../../store/purchaseStore';
 import { Button, Spinner } from "@heroui/react";
 import AddPurchase from '../../components/AddPurchase';
-import usePurchaseStore from '../store/purchaseStore';
+import usePurchaseStore from '../../store/purchaseStore';
 import { useRouter } from 'next/navigation';
 import { usePurchasesData } from '../hooks';
 import useSWR from'swr';

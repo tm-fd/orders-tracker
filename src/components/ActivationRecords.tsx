@@ -18,7 +18,7 @@ import {
 } from "@heroui/react";
 import { SearchIcon } from './icons';
 import { ChevronDownIcon } from './icons';
-import usePurchaseStore from '@/app/store/purchaseStore';
+import usePurchaseStore from '@/store/purchaseStore';
 import moment from 'moment';
 
 interface FirestoreTimestamp {

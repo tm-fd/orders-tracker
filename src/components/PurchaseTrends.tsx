@@ -20,7 +20,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import moment from "moment";
-import usePurchaseStore from "@/app/store/purchaseStore";
+import usePurchaseStore from "@/store/purchaseStore";
 
 type PeriodUnit = "days" | "weeks" | "months";
 type DataPointUnit = "daily" | "weekly" | "monthly";

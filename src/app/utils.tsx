@@ -1,4 +1,4 @@
-import { PurchaseObj } from '../app/store/purchaseStore';
+import { PurchaseObj } from '../store/purchaseStore';
 import { LoadingBars } from '@/components/icons';
 
 export type PurchaseSource = 'Admin' | 'Woo' | 'Imported';

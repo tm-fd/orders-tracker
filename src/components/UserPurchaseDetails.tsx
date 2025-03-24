@@ -5,7 +5,7 @@ import { EditIcon, EyeIconLoading } from './icons';
 import { SharedModal } from './SharedModal';
 import { EditPurchase } from './EditPurchase';
 import OrderDetails from './OrderDetails';
-import usePurchaseStore, { PurchaseObj } from '@/app/store/purchaseStore';
+import usePurchaseStore, { PurchaseObj } from '@/store/purchaseStore';
 import axios from 'axios';
 import moment from 'moment';
 import { SquareStack } from 'lucide-react';

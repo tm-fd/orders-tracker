@@ -14,7 +14,7 @@ import {
 } from "@heroui/react";
 import { Purchase, columns, renderCell } from "../app/purchases/columns";
 import { SearchIcon } from "./icons";
-import usePurchaseStore from "../app/store/purchaseStore";
+import usePurchaseStore from "../store/purchaseStore";
 import { getSource, PurchaseSource } from "@/app/utils";
 
 export default function PurchaseTable() {

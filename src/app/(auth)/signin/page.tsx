@@ -14,7 +14,7 @@ import { EyeSlashFilledIcon, EyeFilledIcon } from '@/components/icons';
 import { doCredentialLogin, resendVerificationEmail } from '@/actions';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
-import usePurchaseStore from '@/app/store/purchaseStore';
+import usePurchaseStore from '@/store/purchaseStore';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';

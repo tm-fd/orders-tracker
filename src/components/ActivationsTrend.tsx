@@ -17,7 +17,7 @@ import {
 } from "recharts";
 import { useEffect, useState } from "react";
 import moment from "moment";
-import usePurchaseStore from "@/app/store/purchaseStore";
+import usePurchaseStore from "@/store/purchaseStore";
 
 interface DateRange {
   start: {

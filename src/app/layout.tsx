@@ -3,7 +3,11 @@ import Providers from './providers';
 import Header from '@/components/Header';
 import AuthWrapper from '@/components/AuthWrapper';
 import { auth } from '@/auth';
-import AppSidebar from "@/layout/AppSidebar";
+import Layout from '@/components/Layout';
+import HeaderWrapper from '@/components/HeaderWrapper';
+
+
+
 
 
 
@@ -47,11 +51,8 @@ export default async function RootLayout({
       <body className="h-screen">
         <Providers session={session}>
         <AuthWrapper>
-        {/* <AppSidebar /> */}
-          <Header />
-          <main className="container flex justify-center items-center h-full">
-            {children}
-          </main>
+          <HeaderWrapper />
+          <Layout>{children}</Layout>
           <footer></footer>
           </AuthWrapper>
         </Providers>
