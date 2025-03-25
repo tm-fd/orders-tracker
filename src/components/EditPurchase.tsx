@@ -1,11 +1,11 @@
 // EditPurchase.tsx
 import React, { useState } from 'react';
 import { Input, Button, Switch } from "@heroui/react";
-import { PurchaseObj } from '@/app/store/purchaseStore';
+import { PurchaseObj } from '@/store/purchaseStore';
 import { useEditPurchase, useAdditionalInfo } from '@/app/hooks';
 import { mutate } from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
-import usePurchaseStore from '@/app/store/purchaseStore';
+import usePurchaseStore from '@/store/purchaseStore';
 
 
 interface EditPurchaseProps {

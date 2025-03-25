@@ -16,3 +16,14 @@
   @keyframes l38 {
     100% {background-position: 100% 0,100% 100%,0 100%,0 0}
   }
+  header{
+    padding: 0 !important;
+  }
+
+  @layer utilities {
+    .content-with-sidebar {
+      transition-property: margin-left;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 300ms;
+    }
+  }

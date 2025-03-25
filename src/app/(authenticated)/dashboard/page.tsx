@@ -31,7 +31,7 @@ import {
   ComposedChart,
   Area,
 } from "recharts";
-import usePurchaseStore from "@/app/store/purchaseStore";
+import usePurchaseStore from "@/store/purchaseStore";
 import { DatePickerIcon } from "@/components/icons";
 import { data } from "framer-motion/client";
 import type { RangeValue } from "@react-types/shared";
@@ -60,7 +60,7 @@ export default function DashboardPage() {
   const [chartData, setChartData] = useState([]);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>({
-    start: parseDate(moment().subtract(30, "days").format("YYYY-MM-DD")),
+    start: parseDate(moment().subtract(360, "days").format("YYYY-MM-DD")),
     end: parseDate(moment().format("YYYY-MM-DD")),
   });
  
@@ -299,8 +299,8 @@ export default function DashboardPage() {
           </CardBody>
         </Card>
       </div>
-      <PurchaseTrends purchaseStatuses={purchaseStatuses} />
-      <ActivationsTrend purchaseStatuses={purchaseStatuses} />
+      <PurchaseTrends dateRange={dateRange} />
+      <ActivationsTrend dateRange={dateRange} />
     </div>
   );
 }

@@ -2,9 +2,9 @@ import { Chip, Link } from "@heroui/react";
 import { DeleteIcon, EditIcon, EyeIcon, LoadingBars } from '@/components/icons';
 import Purchase from '@/components/Purchase';
 import Actions from '@/components/Actions';
-import { ZPurchase, PurchaseObj } from '../store/purchaseStore';
+import { ZPurchase, PurchaseObj } from '../../store/purchaseStore';
 import { LicensesCell } from '@/components/LicensesCell'; 
-import usePurchaseStore from '@/app/store/purchaseStore';
+import usePurchaseStore from '@/store/purchaseStore';
 import { getSource } from '@/app/utils';
 
 

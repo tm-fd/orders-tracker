@@ -1,9 +1,10 @@
 import useSWR from 'swr';
-import { PurchaseObj } from './store/purchaseStore';
+import { PurchaseObj } from '../store/purchaseStore';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Joi from 'joi';
 import { getSession } from 'next-auth/react';
+import { useSidebarStore } from '@/store/sidebar';
 
 
 
@@ -202,4 +203,5 @@ export const useAdditionalInfo = (purchaseId: number) => {
     refetchAdditionalInfo: fetchAdditionalInfo,
   };
 };
+
 

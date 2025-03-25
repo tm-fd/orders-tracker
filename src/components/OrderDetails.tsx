@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Spinner, Chip, Link, Divider, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
-import { PurchaseObj } from '../app/store/purchaseStore';
+import { PurchaseObj } from '../store/purchaseStore';
 import ActivationRecords from './ActivationRecords';
-import { useActivationStore } from '@/app/store/purchaseActivactionsStore';
+import { useActivationStore } from '@/store/purchaseActivactionsStore';
 import { useAdditionalInfo } from '@/app/hooks';
-import usePurchaseStore from '@/app/store/purchaseStore';
+import usePurchaseStore from '@/store/purchaseStore';
 import { getPNShippingStatusInfo, getDHLShippingStatusInfo } from '@/lib/utils'
 
 interface OrderDetailsProps {

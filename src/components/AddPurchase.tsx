@@ -21,7 +21,7 @@ import Joi from "joi";
 import { motion, AnimatePresence } from "framer-motion";
 import { mutate } from "swr";
 import { useSession } from "next-auth/react";
-import usePurchaseStore from "@/app/store/purchaseStore";
+import usePurchaseStore from "@/store/purchaseStore";
 
 export default function AddPurchase({ currentPage }) {
   const { data: session } = useSession();
@@ -433,7 +433,7 @@ export default function AddPurchase({ currentPage }) {
   return (
     <>
       <Button onPress={onOpen} className="bg-blue-700">
-        Add user
+        Add Purchase
       </Button>
       {loading && (
         <Modal

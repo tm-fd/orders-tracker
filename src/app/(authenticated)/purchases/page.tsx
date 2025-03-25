@@ -1,12 +1,12 @@
 'use client';
 import { useEffect, useRef } from 'react';
-import PurchaseTable from '../../components/PurchaseTable';
-import { ZPurchase } from '../store/purchaseStore';
+import PurchaseTable from '@/components/PurchaseTable';
+import { ZPurchase } from '@/store/purchaseStore';
 import { Button, Spinner } from "@heroui/react";
-import AddPurchase from '../../components/AddPurchase';
-import usePurchaseStore from '../store/purchaseStore';
+import AddPurchase from '@/components/AddPurchase';
+import usePurchaseStore from '@/store/purchaseStore';
 import { useRouter } from 'next/navigation';
-import { usePurchasesData } from '../hooks';
+import { usePurchasesData } from '@/app/hooks';
 import useSWR from'swr';
 
 
@@ -77,10 +77,9 @@ export default function Purshases() {
   
 
   return (
-    <section className="py-24">
+    <section className="py-9">
       <div className="container flex flex-col items-center justify-center">
-        <div className="flex items-center justify-between w-full mb-6">
-        {/* <Button onPress={() => router.push('/dashboard')} className="bg-blue-700">Dashboard</Button> */}
+        <div className="flex items-center justify-end w-full mb-6">
           <AddPurchase currentPage={currentPage} />
         </div>
         {isLoading || !data || purchases.length === 0 ? (

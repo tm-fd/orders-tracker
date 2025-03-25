@@ -1,6 +1,6 @@
 import { Tooltip } from "@heroui/react";
 import { CheckCircle2, Circle } from 'lucide-react';
-import { PurchaseStatus } from '@/app/store/purchaseStore'
+import { PurchaseStatus } from '@/store/purchaseStore'
 
 const steps = [
   { key: 'orderPlaced', label: 'Order Placed' },

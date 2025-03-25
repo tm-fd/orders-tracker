@@ -11,8 +11,6 @@ export default function AuthWrapper({ children }) {
   useEffect(() => {
     if (status === 'loading') return;
 
-    console.log( session?.user?.sessionExpires)
-
     if (!session?.user?.sessionExpires) return;
     
     const expirationMoment = moment(session.user.sessionExpires);
