@@ -12,12 +12,5 @@ export const PUBLIC_ROUTES = [
 ]
 
 export const PROTECTED_SUB_ROUTES = [
-    '/addOrder',
-    '/purchases',
-    '/register',
-    '/notifications',
-    '/settings',
-    '/profile',
-    '/dashboard',
-    '/orders',
+    '/(authenticated)',
 ]

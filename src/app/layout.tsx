@@ -1,10 +1,7 @@
 import './global.css';
 import Providers from './providers';
-import Header from '@/components/Header';
 import AuthWrapper from '@/components/AuthWrapper';
 import { auth } from '@/auth';
-import Layout from '@/components/Layout';
-import HeaderWrapper from '@/components/HeaderWrapper';
 
 
 
@@ -13,23 +10,14 @@ import HeaderWrapper from '@/components/HeaderWrapper';
 
 export const metadata = {
   title: 'Order tracker - imvilabs',
-  description: 'Created by  Tariq Mahrous',
+  description: 'Created by Tariq Mahrous',
   icons: {
     icon: [
-      {
-        url: '/favicon.ico',
-        sizes: '48x48',
-      },
-      {
-        url: '/icon.png',
-        sizes: '96x96',
-      },
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/icon.png', sizes: '96x96' },
     ],
     apple: [
-      {
-        url: '/apple-icon.png',
-        sizes: '180x180',
-      },
+      { url: '/apple-icon.png', sizes: '180x180' },
     ],
   },
 };
@@ -51,8 +39,7 @@ export default async function RootLayout({
       <body className="h-screen">
         <Providers session={session}>
         <AuthWrapper>
-          <HeaderWrapper />
-          <Layout>{children}</Layout>
+          {children}
           <footer></footer>
           </AuthWrapper>
         </Providers>

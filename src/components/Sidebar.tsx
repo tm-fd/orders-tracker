@@ -36,26 +36,26 @@ const Sidebar = () => {
       href: "/purchases",
       icon: ShoppingCart,
     },
-    {
-      name: "Users",
-      href: "/#",
-      icon: Users,
-    },
-    {
-      name: "Reports",
-      href: "/dashboard",
-      icon: FileText,
-    },
-    {
-      name: "Notifications",
-      href: "/notifications",
-      icon: Bell,
-    },
-    {
-      name: "Settings",
-      href: "/settings",
-      icon: Settings,
-    },
+    // {
+    //   name: "Users",
+    //   href: "/#",
+    //   icon: Users,
+    // },
+    // {
+    //   name: "Reports",
+    //   href: "/dashboard",
+    //   icon: FileText,
+    // },
+    // {
+    //   name: "Notifications",
+    //   href: "/notifications",
+    //   icon: Bell,
+    // },
+    // {
+    //   name: "Settings",
+    //   href: "/settings",
+    //   icon: Settings,
+    // },
   ];
 
   return (
@@ -88,7 +88,6 @@ const Sidebar = () => {
             </span>
           </div>
         </NavbarBrand>
-
         <div className="flex flex-col gap-1 px-6">
           {navigationItems.map((item) => {
             const Icon = item.icon;
@@ -98,7 +97,7 @@ const Sidebar = () => {
                   href={item.href}
                   className={`w-full flex items-center rounded-lg py-2 text-base font-normal transition-colors group relative ${
                     pathname === item.href
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-secondary/10 text-secondary"
                       : "text-foreground/60 hover:bg-primary/5 hover:text-foreground"
                   }`}
                 >

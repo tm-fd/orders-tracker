@@ -8,7 +8,7 @@ import { useSidebarStore } from '@/store/sidebar';
 const NavigationBar = ({ user }: { user: any }) => {
   const toggle = useSidebarStore((state) => state.toggle);
   const isOpen = useSidebarStore((state) => state.isOpen);
-
+  console.log(user)
   return (
     <Navbar 
       className={`fixed top-0 z-50 border-b border-divider bg-background transition-all duration-300 px-6 ${

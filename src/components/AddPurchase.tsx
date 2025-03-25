@@ -433,7 +433,7 @@ export default function AddPurchase({ currentPage }) {
   return (
     <>
       <Button onPress={onOpen} className="bg-blue-700">
-        Add user
+        Add Purchase
       </Button>
       {loading && (
         <Modal
