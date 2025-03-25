@@ -1,41 +1,22 @@
 'use client';
 
-import Link from 'next/link';
+import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Link } from '@heroui/react';
 import ThemeSwitcher from './ThemeSwitcher';
 import Logout from './Logout';
 import { useSidebarStore } from '@/store/sidebar';
 
-const NavigationList = ({ user }: { user: any }) => {
-  return (
-    <ul className="flex gap-6 flex-row">
-      <li>
-      <Link href="/purchases">Users</Link>
-      </li>
-      {user && (
-        <>
-          <li>
-            <Link 
-              href="/register"
-              
-            >
-              Register admin
-            </Link>
-          </li>
-        </>
-      )}
-    </ul>
-  );
-};
-
-const Header = ({ user }: { user: any }) => {
+const NavigationBar = ({ user }: { user: any }) => {
   const toggle = useSidebarStore((state) => state.toggle);
   const isOpen = useSidebarStore((state) => state.isOpen);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 dark:border-gray-700 ">
-      <nav className="container flex items-center justify-between h-16 px-4">
-        <div className="flex items-center gap-4">
-          <button
+    <Navbar 
+      className={`fixed top-0 z-50 border-b border-divider bg-background transition-all duration-300 px-6 ${
+        isOpen ? 'ml-64 w-[calc(100%-16rem)]' : 'ml-16 w-[calc(100%-4rem)]'
+      }`}
+      maxWidth="full"
+    >
+       <button
             onClick={toggle}
             className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800 transition-colors"
             aria-label="Toggle Sidebar"
@@ -63,24 +44,32 @@ const Header = ({ user }: { user: any }) => {
               )}
             </svg>
           </button>
-          <NavigationList user={user} />
-        </div>
-        <div className="flex items-center gap-4">
+      <NavbarContent className="hidden sm:flex gap-4" justify="center">
+        {user && (
+          <NavbarItem>
+            <Link href="/register" color="foreground">
+              Register admin
+            </Link>
+          </NavbarItem>
+        )}
+      </NavbarContent>
+
+      <NavbarContent justify="end">
+        <NavbarItem>
           <ThemeSwitcher />
+        </NavbarItem>
+        <NavbarItem>
           {user ? (
             <Logout />
           ) : (
-            <Link 
-              href="/signin"
-              className="text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-white"
-            >
+            <Link href="/signin" color="foreground">
               Login
             </Link>
           )}
-        </div>
-      </nav>
-    </header>
+        </NavbarItem>
+      </NavbarContent>
+    </Navbar>
   );
 };
 
-export default Header;
+export default NavigationBar;

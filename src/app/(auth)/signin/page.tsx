@@ -83,8 +83,7 @@ export default function SignIn() {
   }
 
   return (
-    <div className="flex justify-center items-center flex-col p-4 mt-24 bg-default-50 rounded-lg shadow-lg max-[600px]:w-full">
-      <Card className="flex justify-center items-center flex-col p-4 bg-default-50 shadow-lg max-[600px]:w-full">
+      <Card className="flex justify-center items-center flex-col p-4 mt-24 bg-default-50 rounded-lg shadow-sm max-[600px]:w-full">
         <CardHeader className="flex gap-3">
           <h1 className="text-xl font-bold">Sign in</h1>
         </CardHeader>
@@ -215,6 +214,5 @@ export default function SignIn() {
           </Form>
         </CardBody>
       </Card>
-    </div>
   );
 }

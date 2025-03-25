@@ -8,10 +8,12 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   return (
     <div
       className={`flex-1 transition-all duration-300 ${
-        isOpen ? 'ml-64' : 'ml-0'
+        isOpen ? 'ml-64' : 'ml-16'
       }`}
     >
-      <main className="min-h-[calc(100vh-4rem)] p-4">{children}</main>
+      <main className="min-h-screen p-4">
+        {children}
+      </main>
     </div>
   );
 }

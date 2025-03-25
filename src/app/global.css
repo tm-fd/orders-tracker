@@ -16,3 +16,6 @@
   @keyframes l38 {
     100% {background-position: 100% 0,100% 100%,0 100%,0 0}
   }
+  header{
+    padding: 0 !important;
+  }
