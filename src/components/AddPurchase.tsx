@@ -69,7 +69,7 @@ export default function AddPurchase({ currentPage }) {
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [createWooCommerceOrder, setCreateWooCommerceOrder] = useState(false);
-  const [couponCode, setCouponCode] = useState(null);
+  const [couponCode, setCouponCode] = useState("");
   const [shippingAddress, setShippingAddress] = useState({
     address1: "",
     address2: "",
@@ -79,6 +79,20 @@ export default function AddPurchase({ currentPage }) {
     country: "",
     phone: "",
   });
+
+  const countries = [
+    { key: "SE", label: "Sweden" },
+    { key: "NO", label: "Norway" },
+    { key: "DK", label: "Danmark" },
+    { key: "FI", label: "Finland" },
+    { key: "EE", label: "Estonia" },
+    { key: "CH", label: "Switzerland" },
+    { key: "GB", label: "United Kingdom" },
+    { key: "IS", label: "Iceland" },
+    { key: "FR", label: "France" },
+    { key: "DE", label: "Germany" },
+    { key: "AX", label: "Åland Islands" },
+  ];
 
   const handleSelectionChange = (e: any) => {
     setDuration(e.target.value);
@@ -238,12 +252,12 @@ export default function AddPurchase({ currentPage }) {
                 {
                   product_id: process.env.VR_GLASSES_PRODUCT_ID,
                   quantity: Number(numberOfVrGlasses) || 0,
-                  total: !couponCode ? "0" : undefined,
+                  total: couponCode.trim() === "" ? "0" : undefined,
                 },
                 {
                   product_id: process.env.LICENSE_PRODUCT_ID,
                   quantity: Number(numberOfLicenses),
-                  total: !couponCode ? "0" : undefined,
+                  total: couponCode.trim() === "" ? "0" : undefined,
                 },
               ],
               shipping_lines: [
@@ -304,7 +318,7 @@ export default function AddPurchase({ currentPage }) {
         // Handle additional info if present
         if (additionalInfo) {
           try {
-             const additionalInfoRes = await axios.post(
+            const additionalInfoRes = await axios.post(
               `${process.env.CLOUDRUN_DEV_URL}/purchases/additional-info/${purchaseId}`,
               {
                 info: additionalInfo,
@@ -318,7 +332,7 @@ export default function AddPurchase({ currentPage }) {
                 },
               }
             );
-            
+
             if (
               additionalInfoRes.status !== 200 &&
               additionalInfoRes.status !== 201
@@ -333,7 +347,6 @@ export default function AddPurchase({ currentPage }) {
             setLoading(false);
             return;
           }
-          
         }
         addPurchase({
           id: purchaseId,
@@ -347,11 +360,13 @@ export default function AddPurchase({ currentPage }) {
           numberOfLicenses: Number(numberOfLicenses),
           isSubscription: isSubscription,
           duration: Number(duration),
-          additionalInfo: [{
-            info: additionalInfo,
-            purchase_source: "ADMIN",
-            purchase_type: purchaseType,
-          }],
+          additionalInfo: [
+            {
+              info: additionalInfo,
+              purchase_source: "ADMIN",
+              purchase_type: purchaseType,
+            },
+          ],
         });
 
         // Then mutate SWR cache
@@ -362,7 +377,7 @@ export default function AddPurchase({ currentPage }) {
             page: currentPage,
           },
         ]);
-        
+
         setLoading(false);
         setIsSubmitted(true);
         setErrorMessage("The purchase has been added successfully");
@@ -649,17 +664,23 @@ export default function AddPurchase({ currentPage }) {
                           }))
                         }
                       />
-                      <Input
+                      <Select
                         label="Country"
                         variant="bordered"
-                        value={shippingAddress.country}
-                        onValueChange={(value) =>
+                        selectedKeys={[shippingAddress.country]}
+                        onChange={(e) =>
                           setShippingAddress((prev) => ({
                             ...prev,
-                            country: value,
+                            country: e.target.value,
                           }))
                         }
-                      />
+                      >
+                        {countries.map((country) => (
+                          <SelectItem key={country.key} value={country.key}>
+                            {country.label}
+                          </SelectItem>
+                        ))}
+                      </Select>
                     </div>
                     <Input
                       label="Phone"
