@@ -37,7 +37,7 @@ export function SharedModal({
       <ModalContent>
         {(onClose) => (
           <>
-            {title && <ModalHeader>{title}</ModalHeader>}
+            {title && <ModalHeader className="!p-8">{title}</ModalHeader>}
             <ModalBody>{children}</ModalBody>
             {footer && <ModalFooter>{footer}</ModalFooter>}
           </>

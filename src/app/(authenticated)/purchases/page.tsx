@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react';
 import PurchaseTable from '@/components/PurchaseTable';
 import { ZPurchase } from '@/store/purchaseStore';
 import { Button, Spinner } from "@heroui/react";
-import AddPurchase from '@/components/AddPurchase';
 import usePurchaseStore from '@/store/purchaseStore';
 import { useRouter } from 'next/navigation';
 import { usePurchasesData } from '@/app/hooks';
@@ -77,11 +76,9 @@ export default function Purshases() {
   
 
   return (
-    <section className="py-9">
-      <div className="container flex flex-col items-center justify-center">
-        <div className="flex items-center justify-end w-full mb-6">
-          <AddPurchase currentPage={currentPage} />
-        </div>
+    <main className="p-8 space-y-6">
+      <h1 className="text-2xl font-bold">Purchases</h1>
+      <div className=" flex flex-col items-center justify-center max-w-full">
         {isLoading || !data || purchases.length === 0 ? (
           <Spinner
             label="Loading..."
@@ -95,6 +92,6 @@ export default function Purshases() {
            <PurchaseTable />
         )}
       </div>
-    </section>
+    </main>
   );
 }

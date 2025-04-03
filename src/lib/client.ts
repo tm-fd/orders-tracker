@@ -1,3 +1,5 @@
+import ActivationRecords from "@/components/ActivationRecords";
+
 const createQueryString = (params?: Record<string, string | number>) => {
     if (!params) return '';
     const searchParams = new URLSearchParams();
@@ -28,6 +30,7 @@ export const fetchPurchases = async ({url, params}) => {
         isSubscription: obj.is_subscription,
         duration: obj.duration,
         additionalInfo: obj.additional_info,
+        Activations: obj.activations,
       }));
       const data = {
         purchases: customData.reverse(),

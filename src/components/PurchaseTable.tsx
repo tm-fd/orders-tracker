@@ -11,19 +11,45 @@ import {
   SortDescriptor,
   Checkbox,
   Tooltip,
+  Select,
+  SelectItem,
+  Chip,
+  SelectedItems,
+  SelectSection,
+  Button,
 } from "@heroui/react";
-import { Purchase, columns, renderCell } from "@/app/(authenticated)/purchases/columns";
+import {
+  Purchase,
+  columns,
+  renderCell,
+} from "@/app/(authenticated)/purchases/columns";
 import { SearchIcon } from "./icons";
 import usePurchaseStore from "@/store/purchaseStore";
 import { getSource, PurchaseSource } from "@/app/utils";
+import AddPurchase from "@/components/AddPurchase";
 
 export default function PurchaseTable() {
-  const { purchases } = usePurchaseStore();
+  const { purchases, purchaseStatuses, currentPage } = usePurchaseStore();
   const [filterValue, setFilterValue] = useState("");
   const [showHidden, setShowHidden] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [showContinueTraining, setShowContinueTraining] = useState(false);
   const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
+  const filterOptions = {
+    sources: [
+      { value: "Admin", label: "Admin" },
+      { value: "Woo", label: "Woo" },
+      { value: "Imported", label: "Imported" },
+    ],
+    filters: [
+      { value: "continue_training", label: "Continue Training" },
+      { value: "multiple_licenses", label: "Multiple Licenses" },
+      { value: "show_hidden", label: "Show Hidden" },
+      { value: "unused_activation", label: "Unused Activation Code" },
+    ],
+  };
 
   const hasSearchFilter = Boolean(filterValue);
 
@@ -78,47 +104,129 @@ export default function PurchaseTable() {
     });
   }, [purchases]);
 
+  // const filteredItems = useMemo(() => {
+  //   let filteredPurchases = [...groupedPurchases];
+
+  //   // Apply filters based on selected options
+  //   if (selectedFilters.size > 0) {
+  //     filteredPurchases = filteredPurchases.filter(
+  //       ({ recentPurchase, oldPurchases }) => {
+  //         return Array.from(selectedFilters).every((filter) => {
+  //           switch (filter) {
+  //             case "show_hidden":
+  //               return recentPurchase.additionalInfo?.some(
+  //                 (info) => info.is_hidden
+  //               );
+
+  //             case "continue_training":
+  //               if (recentPurchase.additionalInfo?.length > 0) {
+  //                 return (
+  //                   (recentPurchase.additionalInfo[0].purchase_type ===
+  //                     "CONTINUE_TRAINING" &&
+  //                     oldPurchases?.length > 0) ||
+  //                   (recentPurchase.additionalInfo[0].purchase_type ===
+  //                     "SUBSCRIPTION" &&
+  //                     oldPurchases?.length > 0)
+  //                 );
+  //               }
+  //               return false;
+
+  //             case "multiple_licenses":
+  //               return recentPurchase.numberOfLicenses > 1;
+
+  //             case "unused_activation":
+  //               const status = purchaseStatuses[recentPurchase.id];
+  //               return !status?.activationRecords?.length;
+
+  //             default:
+  //               return true;
+  //           }
+  //         });
+  //       }
+  //     );
+  //   }
+
+  //   // Apply source filter
+  //   if (sourceFilter !== "all") {
+  //     filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
+  //       return getSource(recentPurchase) === sourceFilter;
+  //     });
+  //   }
+
+  //   // Apply search filter
+  //   if (hasSearchFilter) {
+  //     filteredPurchases = filteredPurchases.filter(({ recentPurchase }) =>
+  //       searchPurchase(recentPurchase, filterValue)
+  //     );
+  //   }
+
+  //   return filteredPurchases;
+  // }, [
+  //   groupedPurchases,
+  //   filterValue,
+  //   hasSearchFilter,
+  //   sourceFilter,
+  //   selectedFilters,
+  //   purchaseStatuses,
+  // ]);
+
   const filteredItems = useMemo(() => {
     let filteredPurchases = [...groupedPurchases];
-    // Apply hidden filter
-    if (!showHidden) {
-      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
-        const isHidden = recentPurchase.additionalInfo?.some(
-          (info) => info.is_hidden
-        );
-        return !isHidden;
-      });
-    }
 
-    // Apply source filter
-    if (sourceFilter !== "all") {
-      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
-        return getSource(recentPurchase) === sourceFilter;
-      });
-    }
+    if (selectedFilters.size > 0) {
+      // Separate source filters and regular filters
+      const selectedSourceFilters = Array.from(selectedFilters).filter(
+        (filter) => filterOptions.sources.some((s) => s.value === filter)
+      );
+      const selectedRegularFilters = Array.from(selectedFilters).filter(
+        (filter) => filterOptions.filters.some((f) => f.value === filter)
+      );
 
-    // Apply continue training filter
-    if (showContinueTraining) {
       filteredPurchases = filteredPurchases.filter(
         ({ recentPurchase, oldPurchases }) => {
-          if (recentPurchase.additionalInfo.length > 0) {
-            return (
-              (recentPurchase.additionalInfo[0].purchase_type ===
-                "CONTINUE_TRAINING" &&
-                oldPurchases.length > 0) ||
-              (recentPurchase.additionalInfo[0].purchase_type ===
-                "SUBSCRIPTION" &&
-                oldPurchases.length > 0)
+          // Handle source filters
+          const passesSourceFilter =
+            selectedSourceFilters.length === 0 ||
+            selectedSourceFilters.some(
+              (filter) => getSource(recentPurchase) === filter
             );
-          }
-        }
-      );
-    }
 
-    // Apply multiple licenses filter
-    if (showMultipleLicenses) {
-      filteredPurchases = filteredPurchases.filter(
-        ({ recentPurchase }) => recentPurchase.numberOfLicenses > 1
+          // Handle regular filters
+          const passesRegularFilters = selectedRegularFilters.every(
+            (filter) => {
+              switch (filter) {
+                case "show_hidden":
+                  return recentPurchase.additionalInfo?.some(
+                    (info) => info.is_hidden
+                  );
+
+                case "continue_training":
+                  if (recentPurchase.additionalInfo?.length > 0) {
+                    return (
+                      (recentPurchase.additionalInfo[0].purchase_type ===
+                        "CONTINUE_TRAINING" &&
+                        oldPurchases?.length > 0) ||
+                      (recentPurchase.additionalInfo[0].purchase_type ===
+                        "SUBSCRIPTION" &&
+                        oldPurchases?.length > 0)
+                    );
+                  }
+                  return false;
+
+                case "multiple_licenses":
+                  return recentPurchase.numberOfLicenses > 1;
+
+                case "unused_activation":
+                  return !recentPurchase?.Activations?.some(activation => activation.user);
+
+                default:
+                  return true;
+              }
+            }
+          );
+
+          return passesSourceFilter && passesRegularFilters;
+        }
       );
     }
 
@@ -134,10 +242,8 @@ export default function PurchaseTable() {
     groupedPurchases,
     filterValue,
     hasSearchFilter,
-    showHidden,
-    sourceFilter,
-    showContinueTraining,
-    showMultipleLicenses,
+    selectedFilters,
+    purchaseStatuses,
   ]);
 
   const rowsPerPage = 20;
@@ -183,78 +289,166 @@ export default function PurchaseTable() {
     setPage(1);
   }, []);
 
+  //   return (
+  //     <div className="flex flex-col gap-4">
+  //       <div className="flex items-end justify-between gap-3">
+  //         <div className="flex gap-3 flex-1">
+  //           <Input
+  //             isClearable
+  //             className="w-full sm:max-w-[44%]"
+  //             placeholder="Search by anything..."
+  //             startContent={<SearchIcon />}
+  //             value={filterValue}
+  //             onClear={() => onClear()}
+  //             onValueChange={onSearchChange}
+  //           />
+  //           <select
+  //             className="px-3 py-2 rounded-md border border-gray-300"
+  //             value={sourceFilter}
+  //             onChange={(e) =>
+  //               setSourceFilter(e.target.value as PurchaseSource | "all")
+  //             }
+  //           >
+  //             <option value="all">All Sources</option>
+  //             <option value="Admin">Admin</option>
+  //             <option value="Woo">Woo</option>
+  //             <option value="Imported">Imported</option>
+  //           </select>
+  //         </div>
+  //         <div className="flex gap-3">
+  //           <Checkbox
+  //             isSelected={showContinueTraining}
+  //             onValueChange={setShowContinueTraining}
+  //             color="secondary"
+  //           >
+  //             Continue Training
+  //           </Checkbox>
+  //           <Checkbox
+  //             isSelected={showMultipleLicenses}
+  //             onValueChange={setShowMultipleLicenses}
+  //             color="secondary"
+  //           >
+  //             Multiple Licenses
+  //           </Checkbox>
+  //           <Checkbox
+  //             isSelected={showHidden}
+  //             onValueChange={setShowHidden}
+  //             color="secondary"
+  //           >
+  //             Show Hidden
+  //           </Checkbox>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }, [
+  //   filterValue,
+  //   onSearchChange,
+  //   onClear,
+  //   showHidden,
+  //   sourceFilter,
+  //   showContinueTraining,
+  //   showMultipleLicenses,
+  // ]);
+
   const topContent = useMemo(() => {
+  const hasFilters = selectedFilters.size > 0;
+  
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex gap-3 flex-1">
+        <div className="flex flex-row items-end gap-3">
+          <div className="flex w-1/3">
             <Input
+              size="lg"
               isClearable
-              className="w-full sm:max-w-[44%]"
+              className="w-full sm:max-w-[90%]"
               placeholder="Search by anything..."
               startContent={<SearchIcon />}
               value={filterValue}
               onClear={() => onClear()}
               onValueChange={onSearchChange}
             />
-            <select
-              className="px-3 py-2 rounded-md border border-gray-300"
-              value={sourceFilter}
-              onChange={(e) =>
-                setSourceFilter(e.target.value as PurchaseSource | "all")
-              }
-            >
-              <option value="all">All Sources</option>
-              <option value="Admin">Admin</option>
-              <option value="Woo">Woo</option>
-              <option value="Imported">Imported</option>
-            </select>
           </div>
-          <div className="flex gap-3">
-            <Checkbox
-              isSelected={showContinueTraining}
-              onValueChange={setShowContinueTraining}
-              color="secondary"
-            >
-              Continue Training
-            </Checkbox>
-            <Checkbox
-              isSelected={showMultipleLicenses}
-              onValueChange={setShowMultipleLicenses}
-              color="secondary"
-            >
-              Multiple Licenses
-            </Checkbox>
-            <Checkbox
-              isSelected={showHidden}
-              onValueChange={setShowHidden}
-              color="secondary"
-            >
-              Show Hidden
-            </Checkbox>
+          <div className="flex flex-row items-end gap-2 w-3/4">
+            <div className="flex flex-row items-center gap-2 w-full">
+              <Select
+                isMultiline={true}
+                aria-label={"filterBy"}
+                placeholder="Filter by"
+                selectedKeys={selectedFilters}
+                onSelectionChange={setSelectedFilters}
+                classNames={{
+                  base: "w-full",
+                  trigger: "min-h-12 py-2",
+                }}
+                renderValue={(items) => (
+                  <div className="flex flex-wrap gap-2">
+                    {items.map((item) => {
+                      const sourceOption = filterOptions.sources.find(
+                        (opt) => opt.value === item.key
+                      );
+                      const filterOption = filterOptions.filters.find(
+                        (opt) => opt.value === item.key
+                      );
+                      const label = sourceOption?.label || filterOption?.label;
+                      return (
+                        <Chip key={item.key} color="secondary">
+                          {label}
+                        </Chip>
+                      );
+                    })}
+                  </div>
+                )}
+                selectionMode="multiple"
+              >
+                <SelectSection title="Sources" showDivider>
+                  {filterOptions.sources.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectSection>
+                <SelectSection title="Filters">
+                  {filterOptions.filters.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectSection>
+              </Select>
+              
+                <Button
+                  size="lg"
+                  variant="light"
+                  color="default"
+                  isDisabled={!hasFilters}
+                  onPress={() => setSelectedFilters(new Set())}
+                  className="min-w-[120px]"
+                >
+                  Clear Filters
+                </Button>
+              
+            </div>
+            <div className="flex items-end justify-end">
+              <AddPurchase currentPage={currentPage} />
+            </div>
           </div>
         </div>
       </div>
     );
-  }, [
-    filterValue,
-    onSearchChange,
-    onClear,
-    showHidden,
-    sourceFilter,
-    showContinueTraining,
-    showMultipleLicenses,
-  ]);
+  }, [filterValue, onSearchChange, onClear, selectedFilters, currentPage]);
 
+  
   const handlePaginationChange = (page) => {
     setPage(page);
   };
 
   return (
-    <div>
+    <div className="flex w-full">
       <Table
         isStriped
         aria-label="Purchase table"
+        className="min-w-[1024px]"
         topContent={topContent}
         topContentPlacement="outside"
         bottomContent={
