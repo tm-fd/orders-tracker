@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { mutate } from "swr";
 import { useSession } from "next-auth/react";
 import usePurchaseStore from "@/store/purchaseStore";
+import { PlusIcon } from "@/components/icons";
 
 export default function AddPurchase({ currentPage }) {
   const { data: session } = useSession();
@@ -296,7 +297,7 @@ export default function AddPurchase({ currentPage }) {
                 },
               }
             );
-
+            console.log(wooCommerceRes)
             if (
               wooCommerceRes.status !== 200 &&
               wooCommerceRes.status !== 201
@@ -447,7 +448,7 @@ export default function AddPurchase({ currentPage }) {
 
   return (
     <>
-      <Button onPress={onOpen} className="bg-blue-700">
+      <Button size="lg" onPress={onOpen} className="bg-blue-700" endContent={<PlusIcon />}>
         Add Purchase
       </Button>
       {loading && (

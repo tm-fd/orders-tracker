@@ -112,7 +112,7 @@ export default {
             },
             secondary: {
               700: '#62a3d5',
-              foreground: "#9bb7e3",
+              foreground: "#ffffff",
               DEFAULT: "#0165fb",
             },
             success: '#8e9bef',

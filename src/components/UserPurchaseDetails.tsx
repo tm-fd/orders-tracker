@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useDisclosure, Tooltip } from "@heroui/react";
-import { EditIcon, EyeIconLoading } from './icons';
+import { EditIcon, EyeIconLoading, LoadingBars } from './icons';
 import { SharedModal } from './SharedModal';
 import { EditPurchase } from './EditPurchase';
 import OrderDetails from './OrderDetails';
@@ -58,7 +58,6 @@ export default function UserPurchaseDetails({
       }
 
       const response = await res.json();
-      console.log(response)
       if (response && Array.isArray(response)) {
         return response;
       }
@@ -108,24 +107,24 @@ export default function UserPurchaseDetails({
         }
         // Fetch order email
         let orderEmail = null;
-        try {
-          const emailRes = await fetch('/api/handleOrdersEmail', {
-            cache: 'no-store',
-          });
-          if (emailRes.ok) {
-            const emailData = await emailRes.json();
-            const sentEmails = emailData.filter(
-              (emailObj) => emailObj.ContactAlt === purchase.email.toLowerCase()
-            );
-            orderEmail = sentEmails.find(
-              (email) =>
-                email.Subject === 'Tack för din order från imvi labs!' ||
-                email.Subject.includes('förnyelseorder')
-            )?.Status;
-          }
-        } catch (emailError) {
-          console.error('Error fetching order email:', emailError);
-        }
+        // try {
+        //   const emailRes = await fetch('/api/handleOrdersEmail', {
+        //     cache: 'no-store',
+        //   });
+        //   if (emailRes.ok) {
+        //     const emailData = await emailRes.json();
+        //     const sentEmails = emailData.filter(
+        //       (emailObj) => emailObj.ContactAlt === purchase.email.toLowerCase()
+        //     );
+        //     orderEmail = sentEmails.find(
+        //       (email) =>
+        //         email.Subject === 'Tack för din order från imvi labs!' ||
+        //         email.Subject.includes('förnyelseorder')
+        //     )?.Status;
+        //   }
+        // } catch (emailError) {
+        //   console.error('Error fetching order email:', emailError);
+        // }
 
         let shippingInfo = null;
         try {
@@ -164,25 +163,25 @@ export default function UserPurchaseDetails({
                     console.error('PostNord API error:', pnError);
                   }
                 } else {
-                  try {
-                    const myHeaders = new Headers();
-                    myHeaders.append('DHL-API-Key', process.env.DHL_API_KEY);
-                    const dhlRes = await fetch(
-                      `https://api-eu.dhl.com/track/shipments?trackingNumber=${shippingData.tracking_number}`,
-                      {
-                        method: 'GET',
-                        headers: myHeaders,
-                      }
-                    );
-                    if (dhlRes.ok) {
-                      const dhlData = await dhlRes.json();
-                      if (dhlData?.shipments?.[0]) {
-                        shippingInfo = dhlData.shipments[0];
-                      }
-                    }
-                  } catch (dhlError) {
-                    console.error('DHL API error:', dhlError);
-                  }
+                  // try {
+                  //   const myHeaders = new Headers();
+                  //   myHeaders.append('DHL-API-Key', process.env.DHL_API_KEY);
+                  //   const dhlRes = await fetch(
+                  //     `https://api-eu.dhl.com/track/shipments?trackingNumber=${shippingData.tracking_number}`,
+                  //     {
+                  //       method: 'GET',
+                  //       headers: myHeaders,
+                  //     }
+                  //   );
+                  //   if (dhlRes.ok) {
+                  //     const dhlData = await dhlRes.json();
+                  //     if (dhlData?.shipments?.[0]) {
+                  //       shippingInfo = dhlData.shipments[0];
+                  //     }
+                  //   }
+                  // } catch (dhlError) {
+                  //   console.error('DHL API error:', dhlError);
+                  // }
                 }
               }
             }
@@ -308,7 +307,7 @@ export default function UserPurchaseDetails({
         purchaseStatus ? (
           <PurchaseProgressSteps purchaseStatus={purchaseStatus} />
         ) : (
-          <div className="p-2">Loading status...</div>
+          <div className="p-2"><LoadingBars/></div>
         )
       }
       placement="left"

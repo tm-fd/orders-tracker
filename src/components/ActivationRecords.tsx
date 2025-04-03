@@ -75,7 +75,6 @@ export default function ActivationRecords({
 
   const filteredItems = useMemo(() => {
     let filteredRecords = [...activationRecords];
-    console.log(activationRecords);
     if (filterValue) {
       filteredRecords = filteredRecords.filter((record) => {
         const searchValue = filterValue.toLowerCase();

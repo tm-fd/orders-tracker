@@ -57,6 +57,7 @@ export default function DashboardPage() {
   const [activeUsersNotTrained, setActiveUsersNotTrained] = useState(0);
   const [trainedUsers, setTrainedUsers] = useState(0);
   const [invalidUsers, setInvalidUsers] = useState(0);
+  const [validUsersAndTrainedlast12Weeks, setValidUsersAndTrainedlast12Weeks] = useState(0);
   const [chartData, setChartData] = useState([]);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>({
@@ -85,9 +86,12 @@ export default function DashboardPage() {
       Object.values(purchaseStatuses).filter(isActiveNotTrained).length;
     const invalidCount =
       Object.values(purchaseStatuses).filter(isInvalidAccount).length;
+      const validCountAndTraindLast12Weeks =
+      Object.values(purchaseStatuses).filter(isActiveAndTraindLast12Weeks).length;
     setActiveUsersNotTrained(inactiveTrainedCount);
     setTrainedUsers(activeTrainedCount);
     setInvalidUsers(invalidCount);
+    setValidUsersAndTrainedlast12Weeks(validCountAndTraindLast12Weeks);
   };
 
   const checkAccountValidity = (status: any) => {
@@ -108,6 +112,7 @@ export default function DashboardPage() {
   };
 
   const checkActiveButNotTrained = (status: any) => {
+    console.log(status.activationRecords)
     const activationButNotTrained = status.activationRecords?.some(
       (record) =>
         record.user !== null && record.user?.training_session_data?.length === 0
@@ -115,11 +120,39 @@ export default function DashboardPage() {
     return activationButNotTrained;
   };
 
+  const checkActiveAndTrainedLast12Weeks = (status: any) => {
+    const activationAndTrainedRecently = status.activationRecords?.some((record) => {
+      // Check if user exists, has training data, and has valid_until date
+      if (!record.user || 
+          !record.user.training_session_data?.length || 
+          !record.user.valid_until) return false;
+      
+      // Check if valid_until is in the future
+      const validUntilDate = moment(record.user.valid_until);
+      if (!validUntilDate.isAfter(moment())) return false;
+      
+      // Get the last training session
+      const lastTrainingSession = record.user.training_session_data[record.user.training_session_data.length - 1];
+      
+      // Check if start_time exists and is within last 12 weeks
+      if (!lastTrainingSession.start_time) return false;
+      
+      const twelveWeeksAgo = moment().subtract(12, 'weeks');
+      const sessionDate = moment(lastTrainingSession.start_time);
+      
+      return sessionDate.isAfter(twelveWeeksAgo);
+    });
+    
+    return activationAndTrainedRecently;
+  };
+
   const isTrained = (status: any) => checkStartedTraining(status) === true;
   const isActiveNotTrained = (status: any) =>
     checkActiveButNotTrained(status) === true;
   const isInvalidAccount = (status: any) =>
     checkAccountValidity(status) === true;
+  const isActiveAndTraindLast12Weeks = (status: any) =>
+    checkActiveAndTrainedLast12Weeks(status) === true;
 
   const handleDateRangeChange = async (dateRange: any) => {
     if (dateRange.start && dateRange.end) {
@@ -198,7 +231,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen w-full p-6 space-y-6">
+    <div className="min-h-screen w-full p-8 space-y-6">
       <h1 className="text-2xl font-bold">Dashboard</h1>
       <DateRangePicker
         CalendarBottomContent={
@@ -255,15 +288,27 @@ export default function DashboardPage() {
           </ModalContent>
         </Modal>
       
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <Card className="bg-white/10 dark:bg-default-100/50 justify-end">
+          <CardHeader className="pb-2 pt-4 px-4 flex-col items-start">
+            <p className="text-tiny uppercase font-bold">Active Users & trained </p>
+            <small className="text-default-500"> 
+              Current active accounts and trained in the last 12 weeks
+            </small>
+          </CardHeader>
+          <CardBody className="py-4 justify-end">
+            <h1 className="text-4xl font-bold">{validUsersAndTrainedlast12Weeks}</h1>
+          </CardBody>
+        </Card>
+
         <Card className="bg-white/10 dark:bg-default-100/50">
           <CardHeader className="pb-2 pt-4 px-4 flex-col items-start">
-            <p className="text-tiny uppercase font-bold">Active Users </p>
+            <p className="text-tiny uppercase font-bold">Active Users - Not trained </p>
             <small className="text-default-500">
               Current activated accounts but not trained yet
             </small>
           </CardHeader>
-          <CardBody className="py-4">
+          <CardBody className="py-4 justify-end">
             <h1 className="text-4xl font-bold">{activeUsersNotTrained}</h1>
           </CardBody>
         </Card>
@@ -273,7 +318,7 @@ export default function DashboardPage() {
             <p className="text-tiny uppercase font-bold">Total Purchases</p>
             <small className="text-default-500">All-time purchases</small>
           </CardHeader>
-          <CardBody className="py-4">
+          <CardBody className="py-4 justify-end">
             <h1 className="text-4xl font-bold">
               {Object.keys(purchaseStatuses).length}
             </h1>
@@ -285,7 +330,7 @@ export default function DashboardPage() {
             <p className="text-tiny uppercase font-bold">Started Training</p>
             <small className="text-default-500">Users in training</small>
           </CardHeader>
-          <CardBody className="py-4">
+          <CardBody className="py-4 justify-end">
             <h1 className="text-4xl font-bold">{trainedUsers}</h1>
           </CardBody>
         </Card>
@@ -294,7 +339,7 @@ export default function DashboardPage() {
             <p className="text-tiny uppercase font-bold">Inactive Users</p>
             <small className="text-default-500">Current invalid accounts</small>
           </CardHeader>
-          <CardBody className="py-4">
+          <CardBody className="py-4 justify-end">
             <h1 className="text-4xl font-bold">{invalidUsers}</h1>
           </CardBody>
         </Card>
