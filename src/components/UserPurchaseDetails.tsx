@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useDisclosure, Tooltip } from "@heroui/react";
 import { EditIcon, EyeIconLoading, LoadingBars } from './icons';
 import { SharedModal } from './SharedModal';
@@ -58,6 +58,9 @@ export default function UserPurchaseDetails({
       }
 
       const response = await res.json();
+      if(purchaseId == 1607){
+        console.log('Activation records:', response);
+      }
       if (response && Array.isArray(response)) {
         return response;
       }
@@ -193,7 +196,7 @@ export default function UserPurchaseDetails({
         }
         const activationRecords = await fetchActivationRecord(purchase.id);
         const validUntil = activationRecords[0]?.user?.valid_until;
-        const isInvalidAccount = validUntil ? moment(validUntil).isAfter(moment()) : false;
+        const isInvalidAccount = validUntil && moment(validUntil).isBefore(moment());
         
 
         const hasOrderStatus_email = Boolean(
@@ -206,7 +209,7 @@ export default function UserPurchaseDetails({
           activationRecords &&
             activationRecords.length > 0 &&
             activationRecords[0]?.user?.training_session_data?.length > 0 &&
-            isInvalidAccount
+            !isInvalidAccount
         );
 
         const startedTraining_with_VR = Boolean(
@@ -216,19 +219,19 @@ export default function UserPurchaseDetails({
           activationRecords &&
             activationRecords.length > 0 &&
             activationRecords[0]?.user?.training_session_data?.length > 0 &&
-            isInvalidAccount
+            !isInvalidAccount
         );
         
       
         
-        const isActivated_and_VR_delivered = Boolean(
+        const isActivated_and_VR_delivered_Not_trained = Boolean(
           orderStatus &&
             orderEmail &&
             shippingInfo && (shippingInfo.status === 'DELIVERED' || shippingInfo.status?.statusCode === 'delivered') &&
             activationRecords &&
             activationRecords.length > 0 &&
-            !activationRecords[0]?.user?.training_session_data?.length > 0 &&
-            isInvalidAccount
+            activationRecords[0]?.user?.training_session_data?.length === 0 &&
+            validUntil === null
         );
 
         const isActivated_and_VR_not_delivered = Boolean(
@@ -238,7 +241,7 @@ export default function UserPurchaseDetails({
             activationRecords &&
             activationRecords.length > 0 &&
             !activationRecords[0]?.user?.training_session_data?.length > 0 &&
-            isInvalidAccount
+            validUntil === null
         );
 
         
@@ -253,7 +256,7 @@ export default function UserPurchaseDetails({
           orderEmail,
           shippingInfo,
           activationRecords,
-          isActivated_and_VR_delivered,
+          isActivated_and_VR_delivered_Not_trained,
           isActivated_and_VR_not_delivered,
           startedTraining,
           startedTraining_with_VR,
@@ -280,6 +283,16 @@ export default function UserPurchaseDetails({
     purchaseStatus,
     setPurchaseStatus,
   ]);
+
+  useEffect(() => {
+    if(Number(purchase.id) == 1607 && purchaseStatus){
+      console.log(purchaseStatus.orderStatus ,
+        purchaseStatus.orderEmail,
+        purchaseStatus.shippingInfo, 
+        purchaseStatus.activationRecords,
+        purchaseStatus.isActivated_and_VR_delivered_Not_trained)
+    }
+  }, [purchase, purchaseStatus]);
 
   
 
@@ -340,7 +353,7 @@ export default function UserPurchaseDetails({
                 ? '#e8cd1e'
                 : purchaseStatus?.isActivated_and_VR_not_delivered
                 ? '#e8cd1e'
-                : purchaseStatus?.isActivated_and_VR_delivered
+                : purchaseStatus?.isActivated_and_VR_delivered_Not_trained
                 ? '#ec4fba'
                 : purchaseStatus?.isInvalidAccount
                 ? '#bababa'
