@@ -166,25 +166,25 @@ export default function UserPurchaseDetails({
                     console.error('PostNord API error:', pnError);
                   }
                 } else {
-                  // try {
-                  //   const myHeaders = new Headers();
-                  //   myHeaders.append('DHL-API-Key', process.env.DHL_API_KEY);
-                  //   const dhlRes = await fetch(
-                  //     `https://api-eu.dhl.com/track/shipments?trackingNumber=${shippingData.tracking_number}`,
-                  //     {
-                  //       method: 'GET',
-                  //       headers: myHeaders,
-                  //     }
-                  //   );
-                  //   if (dhlRes.ok) {
-                  //     const dhlData = await dhlRes.json();
-                  //     if (dhlData?.shipments?.[0]) {
-                  //       shippingInfo = dhlData.shipments[0];
-                  //     }
-                  //   }
-                  // } catch (dhlError) {
-                  //   console.error('DHL API error:', dhlError);
-                  // }
+                  try {
+                    const myHeaders = new Headers();
+                    myHeaders.append('DHL-API-Key', process.env.DHL_API_KEY);
+                    const dhlRes = await fetch(
+                      `https://api-eu.dhl.com/track/shipments?trackingNumber=${shippingData.tracking_number}`,
+                      {
+                        method: 'GET',
+                        headers: myHeaders,
+                      }
+                    );
+                    if (dhlRes.ok) {
+                      const dhlData = await dhlRes.json();
+                      if (dhlData?.shipments?.[0]) {
+                        shippingInfo = dhlData.shipments[0];
+                      }
+                    }
+                  } catch (dhlError) {
+                    console.error('DHL API error:', dhlError);
+                  }
                 }
               }
             }
@@ -330,7 +330,7 @@ export default function UserPurchaseDetails({
       closeDelay={0}
       className="w-[500px]"
     >
-       <div className="relative flex items-center justify-end gap-2 min-w-20">
+       <div className="relative flex items-center justify-center gap-2 min-w-20">
         {purchase.numberOfVrGlasses === 0 && oldPurchases.length > 0 && (
           <span>C</span>
         )}
