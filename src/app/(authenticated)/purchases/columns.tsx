@@ -86,7 +86,7 @@ const SourceCell = ({ purchase, oldPurchases }: {
 export const renderCell = (purchase: PurchaseObj, columnKey: React.Key, oldPurchases?: Purchase[] = []) => {
   const cellValue = purchase[columnKey as keyof PurchaseObj];
   switch (columnKey) {
-    case'source':
+    case 'source':
       return <SourceCell purchase={purchase} oldPurchases={oldPurchases} />;
     case 'orderNumber':
       return <Purchase>{purchase.orderNumber}</Purchase>;

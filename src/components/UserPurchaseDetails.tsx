@@ -8,8 +8,11 @@ import OrderDetails from './OrderDetails';
 import usePurchaseStore, { PurchaseObj } from '@/store/purchaseStore';
 import axios from 'axios';
 import moment from 'moment';
-import { SquareStack } from 'lucide-react';
+import { SquareStack, Activity } from 'lucide-react';
 import { PurchaseProgressSteps } from './PurchaseProgressSteps';
+import { TrainingSessions } from './TrainingSessions';
+
+
 
 
 interface UserPurchaseDetailsProps {
@@ -25,6 +28,8 @@ export default function UserPurchaseDetails({
   const [isEditing, setIsEditing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [localLoading, setLocalLoading] = useState(true);
+  const [isViewingTrainingSessions, setIsViewingTrainingSessions] = useState(false);
+
 
   const {
     purchases,
@@ -285,16 +290,14 @@ export default function UserPurchaseDetails({
   ]);
 
   useEffect(() => {
-    if(Number(purchase.id) == 1607 && purchaseStatus){
-      console.log(purchaseStatus.orderStatus ,
-        purchaseStatus.orderEmail,
-        purchaseStatus.shippingInfo, 
-        purchaseStatus.activationRecords,
-        purchaseStatus.isActivated_and_VR_delivered_Not_trained)
-    }
+    
+    console.log(purchaseStatus?.activationRecords[0]?.user)
   }, [purchase, purchaseStatus]);
 
-  
+  const handleTrainingSessionsClick = () => {
+    setIsViewingTrainingSessions(true);
+    onOpen();
+  };
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -310,6 +313,7 @@ export default function UserPurchaseDetails({
 
   const handleCloseModal = () => {
     setIsEditing(false);
+    setIsViewingTrainingSessions(false);
     onClose();
   };
 
@@ -331,6 +335,15 @@ export default function UserPurchaseDetails({
       className="w-[500px]"
     >
        <div className="relative flex items-center justify-center gap-2 min-w-20">
+       {purchaseStatus?.activationRecords[0]?.user?.training_session_data?.length > 0 && (
+  <span
+    onClick={handleTrainingSessionsClick}
+    className="text-lg text-default-400 cursor-pointer active:opacity-50"
+    title="View Training Sessions"
+  >
+    <Activity size={20} color="#0062ff" />
+  </span>
+)}
         {purchase.numberOfVrGlasses === 0 && oldPurchases.length > 0 && (
           <span>C</span>
         )}
@@ -369,17 +382,31 @@ export default function UserPurchaseDetails({
         </span>
       </div>
     </Tooltip>
-      <SharedModal
-        isOpen={isOpen}
-        onOpenChange={handleCloseModal}
-        title={isEditing ? 'Edit Purchase' : 'Purchase Details'}
-      >
-        {isEditing ? (
-          <EditPurchase purchase={purchase} onClose={handleCloseModal} />
-        ) : (
-          <OrderDetails purchase={purchase} onStatusComplete={setIsComplete} oldPurchases={oldPurchases} />
-        )}
-      </SharedModal>
+    <SharedModal
+  isOpen={isOpen}
+  onOpenChange={handleCloseModal}
+  title={
+    isEditing 
+      ? 'Edit Purchase' 
+      : isViewingTrainingSessions 
+        ? 'Training Sessions' 
+        : 'Purchase Details'
+  }
+>
+  {isEditing ? (
+    <EditPurchase purchase={purchase} onClose={handleCloseModal} />
+  ) : isViewingTrainingSessions ? (
+    <TrainingSessions 
+      sessions={purchaseStatus?.activationRecords[0]?.user?.training_session_data || []} 
+    />
+  ) : (
+    <OrderDetails 
+      purchase={purchase} 
+      onStatusComplete={setIsComplete} 
+      oldPurchases={oldPurchases} 
+    />
+  )}
+</SharedModal>
     </>
   );
 }

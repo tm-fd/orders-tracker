@@ -56,8 +56,7 @@ export default function OrderDetails({ purchase, oldPurchases }: OrderDetailsPro
       />
     );
   }
-  
-console.log(additionalInfos)
+
   return (
     <section className="pb-12">
       <div className="container flex flex-col items-start justify-start">
