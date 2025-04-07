@@ -334,7 +334,7 @@ export default function UserPurchaseDetails({
       closeDelay={0}
       className="w-[500px]"
     >
-       <div className="relative flex items-center justify-center gap-2 min-w-20">
+       <div className="relative flex items-center justify-end gap-2 min-w-20">
        {purchaseStatus?.activationRecords[0]?.user?.training_session_data?.length > 0 && (
   <span
     onClick={handleTrainingSessionsClick}
