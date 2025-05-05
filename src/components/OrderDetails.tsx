@@ -175,8 +175,8 @@ export default function OrderDetails({ purchase, oldPurchases }: OrderDetailsPro
                 <TableColumn>Duration</TableColumn>
               </TableHeader>
               <TableBody>
-                {oldPurchases.map((oldPurchase) => (
-                  <TableRow key={oldPurchase.id}>
+                {oldPurchases.map((oldPurchase, index) => (
+                  <TableRow key={index.toString()}>
                     <TableCell>{oldPurchase.orderNumber}</TableCell>
                     <TableCell>{oldPurchase.confirmationCode}</TableCell>
                     <TableCell>{new Date(oldPurchase.date).toLocaleDateString()}</TableCell>
