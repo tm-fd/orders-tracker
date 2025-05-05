@@ -133,37 +133,90 @@ export default function AddPurchase({ currentPage }) {
       additional_info: Joi.object().allow(null).optional(),
     };
 
-    // Add shipping address validation when WooCommerce order is enabled
-    if (obj.createWooCommerceOrder) {
-      baseSchema.shippingAddress = Joi.object({
-        address1: Joi.string().required().messages({
-          "string.required": "Address Line 1 is required",
-        }),
-        address2: Joi.string().allow("").optional(),
-        city: Joi.string().required().messages({
-          "string.required": "City is required",
-        }),
-        state: Joi.string().required().messages({
-          "string.required": "State is required",
-        }),
-        postcode: Joi.string().required().messages({
-          "string.required": "Postal Code is required",
-        }),
-        country: Joi.string().required().messages({
-          "string.required": "Country is required",
-        }),
-        phone: Joi.string().required().messages({
-          "string.required": "Phone is required",
-        }),
-      }).required();
-    }
-
     const schema = Joi.object(baseSchema);
     return schema.validate(obj);
   };
 
+  const validateShippingAddress = (shippingAddress: any) => {
+    const shippingAddressSchema = Joi.object({
+      address1: Joi.string().required().messages({
+        "string.empty": "Address Line 1 is required",
+        "any.required": "Address Line 1 is required",
+      }),
+      address2: Joi.string().allow("").optional(),
+      city: Joi.string().required().messages({
+        "string.empty": "City is required",
+        "any.required": "City is required",
+      }),
+      state: Joi.string().required().messages({
+        "string.empty": "State is required",
+        "any.required": "State is required",
+      }),
+      postcode: Joi.string().required().messages({
+        "string.empty": "Postal Code is required",
+        "any.required": "Postal Code is required",
+      }),
+      country: Joi.string().required().messages({
+        "string.empty": "Country is required",
+        "any.required": "Country is required",
+      }),
+      phone: Joi.string()
+      .pattern(/^(\+?[1-9]\d{1,14}|0\d{9})$/)
+      .allow("") 
+      .optional()
+      .messages({
+        "string.pattern.base": "Please enter a valid phone number",
+      }),
+    });
+
+    return shippingAddressSchema.validate(shippingAddress, {
+      abortEarly: false,
+    });
+  };
+
+  const getLastOrderId = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.IMVI_WOOCOMMERCE_URL}/wp-json/wc/v3/orders`,
+        {
+          params: {
+            per_page: 1,
+            orderby: "date",
+            order: "desc",
+          },
+          auth: {
+            username: process.env.WOO_API_KEY,
+            password: process.env.WOO_API_SECERT,
+          },
+        }
+      );
+
+      if (response.data && response.data.length > 0) {
+        return String(response.data[0].id + 1);
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching last order ID:", error);
+      return null;
+    }
+  };
+
   const submitPurchase = useCallback(async () => {
     if (loading) return;
+    setLoading(true);
+
+    if (createWooCommerceOrder) {
+      const { error: shippingError } = validateShippingAddress(shippingAddress);
+      if (shippingError) {
+        const errorMessage = shippingError.details
+          .map((detail) => detail.message)
+          .join(", ");
+        setErrorMessage(errorMessage);
+        setLoading(false);
+        return;
+      }
+    }
+
     const orderNumber = cryptoRandomString({ length: 10, type: "numeric" });
     const code = cryptoRandomString({
       length: 4,
@@ -178,8 +231,9 @@ export default function AddPurchase({ currentPage }) {
         (Number(duration) === 84 && Number(numberOfVrGlasses) === 0)
       ? "CONTINUE_TRAINING"
       : "START_PACKAGE";
-    console.log(Number(duration) === 84 && Number(numberOfVrGlasses) === 0);
-    const purchaseObj = {
+
+
+    const initPurchaseObj = {
       email,
       firstName,
       lastName,
@@ -196,15 +250,20 @@ export default function AddPurchase({ currentPage }) {
       },
     };
 
-    const { error } = JoiValidatePurchase(purchaseObj);
-
+    const { error } = JoiValidatePurchase(initPurchaseObj);
     if (error) {
       setErrorMessage(error.details[0].message);
+      setLoading(false);
       return;
-    } else {
-      setErrorMessage(null);
-      setLoading(true);
     }
+
+    const orderNumberFromWoo = createWooCommerceOrder
+      ? await getLastOrderId()
+      : orderNumber;
+    const purchaseObj = {
+      ...initPurchaseObj,
+      orderNumber: orderNumberFromWoo,
+    };
 
     try {
       const purchaseRes = await axios.post(
@@ -297,7 +356,7 @@ export default function AddPurchase({ currentPage }) {
                 },
               }
             );
-            console.log(wooCommerceRes)
+            console.log(wooCommerceRes);
             if (
               wooCommerceRes.status !== 200 &&
               wooCommerceRes.status !== 201
@@ -351,7 +410,9 @@ export default function AddPurchase({ currentPage }) {
         }
         addPurchase({
           id: purchaseId,
-          orderNumber,
+          orderNumber: createWooCommerceOrder
+            ? orderNumberFromWoo
+            : orderNumber,
           email,
           customerName: firstName + " " + lastName,
           date: purchaseRes.data.created_at,
@@ -448,7 +509,12 @@ export default function AddPurchase({ currentPage }) {
 
   return (
     <>
-      <Button size="lg" onPress={onOpen} className="bg-blue-700" endContent={<PlusIcon />}>
+      <Button
+        size="lg"
+        onPress={onOpen}
+        className="bg-blue-700"
+        endContent={<PlusIcon />}
+      >
         Add Purchase
       </Button>
       {loading && (
@@ -498,7 +564,7 @@ export default function AddPurchase({ currentPage }) {
                       }}
                     >
                       <ModalHeader
-                        className={`flex flex-col gap-1 ${
+                        className={`flex flex-col gap-1 !p-3 ${
                           isSubmitted
                             ? "bg-green-500 text-green-50"
                             : "bg-warning-100 text-warning-700"
@@ -518,6 +584,7 @@ export default function AddPurchase({ currentPage }) {
                   errorMessage="Please enter a valid email"
                   value={email}
                   onValueChange={setEmail}
+                  isRequired
                 />
                 <Input
                   autoFocus
@@ -525,6 +592,7 @@ export default function AddPurchase({ currentPage }) {
                   variant="bordered"
                   value={firstName}
                   onValueChange={setFistname}
+                  isRequired
                 />
                 <Input
                   autoFocus
@@ -532,6 +600,7 @@ export default function AddPurchase({ currentPage }) {
                   variant="bordered"
                   value={lastName}
                   onValueChange={setLastname}
+                  isRequired
                 />
                 <Input
                   autoFocus
@@ -540,6 +609,7 @@ export default function AddPurchase({ currentPage }) {
                   value={numberOfVrGlasses}
                   onValueChange={setNumberOfVrGlasses}
                   type="number"
+                  isRequired
                 />
                 <Input
                   autoFocus
@@ -549,6 +619,7 @@ export default function AddPurchase({ currentPage }) {
                   onValueChange={setNumberOfLicenses}
                   onChange={handleInputChange}
                   type="number"
+                  isRequired
                 />
                 <Input
                   autoFocus
@@ -573,6 +644,7 @@ export default function AddPurchase({ currentPage }) {
                   selectedKeys={[duration]}
                   onChange={handleSelectionChange}
                   className="max-w-xs"
+                  isRequired
                 >
                   <SelectSection showDivider title="Start Package">
                     {startPackage.map((d) => (
@@ -617,6 +689,7 @@ export default function AddPurchase({ currentPage }) {
                           address1: value,
                         }))
                       }
+                      isRequired
                     />
                     <Input
                       label="Address Line 2"
@@ -640,6 +713,7 @@ export default function AddPurchase({ currentPage }) {
                             city: value,
                           }))
                         }
+                        isRequired
                       />
                       <Input
                         label="State/Province"
@@ -664,6 +738,7 @@ export default function AddPurchase({ currentPage }) {
                             postcode: value,
                           }))
                         }
+                        isRequired
                       />
                       <Select
                         label="Country"
@@ -675,6 +750,7 @@ export default function AddPurchase({ currentPage }) {
                             country: e.target.value,
                           }))
                         }
+                        isRequired
                       >
                         {countries.map((country) => (
                           <SelectItem key={country.key} value={country.key}>

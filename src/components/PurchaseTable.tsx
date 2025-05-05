@@ -104,71 +104,7 @@ export default function PurchaseTable() {
     });
   }, [purchases]);
 
-  // const filteredItems = useMemo(() => {
-  //   let filteredPurchases = [...groupedPurchases];
-
-  //   // Apply filters based on selected options
-  //   if (selectedFilters.size > 0) {
-  //     filteredPurchases = filteredPurchases.filter(
-  //       ({ recentPurchase, oldPurchases }) => {
-  //         return Array.from(selectedFilters).every((filter) => {
-  //           switch (filter) {
-  //             case "show_hidden":
-  //               return recentPurchase.additionalInfo?.some(
-  //                 (info) => info.is_hidden
-  //               );
-
-  //             case "continue_training":
-  //               if (recentPurchase.additionalInfo?.length > 0) {
-  //                 return (
-  //                   (recentPurchase.additionalInfo[0].purchase_type ===
-  //                     "CONTINUE_TRAINING" &&
-  //                     oldPurchases?.length > 0) ||
-  //                   (recentPurchase.additionalInfo[0].purchase_type ===
-  //                     "SUBSCRIPTION" &&
-  //                     oldPurchases?.length > 0)
-  //                 );
-  //               }
-  //               return false;
-
-  //             case "multiple_licenses":
-  //               return recentPurchase.numberOfLicenses > 1;
-
-  //             case "unused_activation":
-  //               const status = purchaseStatuses[recentPurchase.id];
-  //               return !status?.activationRecords?.length;
-
-  //             default:
-  //               return true;
-  //           }
-  //         });
-  //       }
-  //     );
-  //   }
-
-  //   // Apply source filter
-  //   if (sourceFilter !== "all") {
-  //     filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
-  //       return getSource(recentPurchase) === sourceFilter;
-  //     });
-  //   }
-
-  //   // Apply search filter
-  //   if (hasSearchFilter) {
-  //     filteredPurchases = filteredPurchases.filter(({ recentPurchase }) =>
-  //       searchPurchase(recentPurchase, filterValue)
-  //     );
-  //   }
-
-  //   return filteredPurchases;
-  // }, [
-  //   groupedPurchases,
-  //   filterValue,
-  //   hasSearchFilter,
-  //   sourceFilter,
-  //   selectedFilters,
-  //   purchaseStatuses,
-  // ]);
+  
 
   const filteredItems = useMemo(() => {
     let filteredPurchases = [...groupedPurchases];
@@ -288,68 +224,7 @@ export default function PurchaseTable() {
     setFilterValue("");
     setPage(1);
   }, []);
-
-  //   return (
-  //     <div className="flex flex-col gap-4">
-  //       <div className="flex items-end justify-between gap-3">
-  //         <div className="flex gap-3 flex-1">
-  //           <Input
-  //             isClearable
-  //             className="w-full sm:max-w-[44%]"
-  //             placeholder="Search by anything..."
-  //             startContent={<SearchIcon />}
-  //             value={filterValue}
-  //             onClear={() => onClear()}
-  //             onValueChange={onSearchChange}
-  //           />
-  //           <select
-  //             className="px-3 py-2 rounded-md border border-gray-300"
-  //             value={sourceFilter}
-  //             onChange={(e) =>
-  //               setSourceFilter(e.target.value as PurchaseSource | "all")
-  //             }
-  //           >
-  //             <option value="all">All Sources</option>
-  //             <option value="Admin">Admin</option>
-  //             <option value="Woo">Woo</option>
-  //             <option value="Imported">Imported</option>
-  //           </select>
-  //         </div>
-  //         <div className="flex gap-3">
-  //           <Checkbox
-  //             isSelected={showContinueTraining}
-  //             onValueChange={setShowContinueTraining}
-  //             color="secondary"
-  //           >
-  //             Continue Training
-  //           </Checkbox>
-  //           <Checkbox
-  //             isSelected={showMultipleLicenses}
-  //             onValueChange={setShowMultipleLicenses}
-  //             color="secondary"
-  //           >
-  //             Multiple Licenses
-  //           </Checkbox>
-  //           <Checkbox
-  //             isSelected={showHidden}
-  //             onValueChange={setShowHidden}
-  //             color="secondary"
-  //           >
-  //             Show Hidden
-  //           </Checkbox>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }, [
-  //   filterValue,
-  //   onSearchChange,
-  //   onClear,
-  //   showHidden,
-  //   sourceFilter,
-  //   showContinueTraining,
-  //   showMultipleLicenses,
-  // ]);
+  
 
   const topContent = useMemo(() => {
   const hasFilters = selectedFilters.size > 0;

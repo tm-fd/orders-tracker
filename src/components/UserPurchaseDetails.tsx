@@ -289,11 +289,6 @@ export default function UserPurchaseDetails({
     setPurchaseStatus,
   ]);
 
-  useEffect(() => {
-    
-    console.log(purchaseStatus?.activationRecords[0]?.user)
-  }, [purchase, purchaseStatus]);
-
   const handleTrainingSessionsClick = () => {
     setIsViewingTrainingSessions(true);
     onOpen();
