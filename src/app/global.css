@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+html { padding-right: 0 !important; overflow: visible !important; }
+
+
 .loader {
     aspect-ratio: 1;
     --_g: no-repeat radial-gradient(farthest-side,#5a5b5b 94%,#0000);
@@ -27,3 +30,4 @@
       transition-duration: 300ms;
     }
   }
+  

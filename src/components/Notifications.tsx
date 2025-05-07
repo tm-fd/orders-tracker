@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useCallback } from "react";
 import {
   Dropdown,
   DropdownTrigger,
@@ -9,79 +9,69 @@ import {
   DropdownSection,
   Button,
   Badge,
-  Link,
 } from "@heroui/react";
 import { Bell } from "lucide-react";
 import usePurchaseStore from "@/store/purchaseStore";
+import { useNotificationStore } from "@/store/notificationStore";
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  purchaseId: number;
-}
+const fetchNotifications = async () => {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - 2);
+  
+  const response = await fetch(
+    `${process.env.CLOUDRUN_DEV_URL}/purchases/all-info-by-date-range?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+  );
+  if (!response.ok) throw new Error('Failed to fetch notifications');
+  return response.json();
+};
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { setActiveFilters } = usePurchaseStore();
   const {
-    fetchPurchaseStatusesByDateRange,
-    purchaseStatuses,
-    setActiveFilters,
-    clearActiveFilters,
-  } = usePurchaseStore();
+    notifications,
+    setNotifications,
+    markAsRead,
+    markAllAsRead,
+  } = useNotificationStore();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 2);
+  const processNotifications = useCallback((statuses: any) => {
+    if (!statuses) return;
 
-      await fetchPurchaseStatusesByDateRange(startDate, endDate);
-    };
-    const initialTimeout = setTimeout(() => {
-      fetchData();
-    }, 5000);
-    return () => clearTimeout(initialTimeout);
-  }, [fetchPurchaseStatusesByDateRange]);
-
-  useEffect(() => {
-    const newNotifications: Notification[] = [];
-
-    Object.entries(purchaseStatuses).forEach(([purchaseId, status]) => {
+    const newNotifications = Object.entries(statuses).map(([purchaseId, status]: [string, any]) => {
       if (
         status.shippingInfo === null &&
         status.additionalInfo?.[0]?.purchase_type === "START_PACKAGE" &&
         status.orderStatus?.order_id?.toString().length < 9 &&
         status.orderStatus?.status === "completed"
       ) {
-        console.log(purchaseId, status);
-        newNotifications.push({
+        return {
           id: `shipping-${purchaseId}`,
           title: "Shipping Information Missing",
           message: `Order #${status.orderStatus?.order_id} is missing shipping information`,
           time: new Date().toLocaleString(),
           read: false,
           purchaseId: Number(purchaseId),
-        });
+        };
       }
-    });
+      return null;
+    }).filter(Boolean);
+
     setNotifications(newNotifications);
-  }, [purchaseStatuses]);
+  }, [setNotifications]);
+
+  // Fetch notifications only on component mount
+  useEffect(() => {
+    fetchNotifications()
+      .then(processNotifications)
+      .catch(error => console.error('Error fetching notifications:', error));
+  }, []); // Empty dependency array means this runs once on mount
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const handleMarkAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
-  };
-
   const handleNotificationClick = (purchaseId: number) => {
     setActiveFilters({ purchaseId, missingShipping: false });
-    // mark the notification as read
-    setNotifications(notifications.map(n => 
-      n.purchaseId === purchaseId ? { ...n, read: true } : n
-    ));
+    markAsRead(purchaseId);
   };
 
   const handleShowAllMissingShipping = () => {
@@ -126,7 +116,7 @@ const Notifications = () => {
                   size="sm"
                   variant="ghost"
                   className="text-sm"
-                  onPress={handleMarkAllAsRead}
+                  onPress={markAllAsRead}
                 >
                   Mark all as read
                 </Button>
