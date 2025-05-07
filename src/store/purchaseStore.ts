@@ -51,6 +51,10 @@ interface State {
   isLoading: boolean;
   error: string | null;
   currentPage: number;
+  activeFilters: {
+    missingShipping: boolean;
+    purchaseId?: number;
+  };
 }
 
 interface Actions {
@@ -62,6 +66,8 @@ interface Actions {
   addPurchase: (purchase: ZPurchase) => void;
   updatePurchase: (updatedPurchase: PurchaseObj) => void;
   fetchPurchaseStatusesByDateRange: (startDate: Date, endDate: Date) => Promise<void>;
+  setActiveFilters: (filters: { missingShipping?: boolean; purchaseId?: number }) => void;
+  clearActiveFilters: () => void;
   reset: () => void;
 }
 
@@ -71,6 +77,10 @@ const initialState: State = {
   isLoading: false,
   error: null,
   currentPage: 0,
+  activeFilters: {
+    missingShipping: false,
+    purchaseId: undefined,
+  },
 };
 
 const usePurchaseStore = create<State & Actions>()(
@@ -115,6 +125,19 @@ const usePurchaseStore = create<State & Actions>()(
            set({ isLoading: false });
         }
       },
+      setActiveFilters: (filters) => set((state) => ({
+        activeFilters: {
+          ...state.activeFilters,
+          ...filters,
+        }
+      })),
+      
+      clearActiveFilters: () => set((state) => ({
+        activeFilters: {
+          missingShipping: false,
+          purchaseId: undefined,
+        }
+      })),
       reset: () => set(initialState),
     }),
     {

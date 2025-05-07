@@ -1,13 +1,42 @@
 'use client';
 
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Link } from '@heroui/react';
+import { 
+  Navbar, 
+  NavbarBrand, 
+  NavbarContent, 
+  NavbarItem, 
+  Link,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Avatar,
+  User,
+  Button,
+  Badge
+} from '@heroui/react';
 import ThemeSwitcher from './ThemeSwitcher';
 import Logout from './Logout';
 import { useSidebarStore } from '@/store/sidebar';
+import { Bell } from 'lucide-react';
+import Notifications from './Notifications';
+
+
 
 const NavigationBar = ({ user }: { user: any }) => {
   const toggle = useSidebarStore((state) => state.toggle);
   const isOpen = useSidebarStore((state) => state.isOpen);
+ 
+
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  };
+  
   return (
     <Navbar 
       className={`fixed top-0 z-50 border-b border-divider bg-background transition-all duration-300 px-6 ${
@@ -43,8 +72,8 @@ const NavigationBar = ({ user }: { user: any }) => {
               )}
             </svg>
           </button>
-      <NavbarContent className="hidden sm:flex gap-4" justify="center">
-        {user && (
+          <NavbarContent className="hidden sm:flex gap-4" justify="center">
+        {user?.role === 'ADMIN' && (
           <NavbarItem>
             <Link href="/register" color="foreground">
               Register admin
@@ -53,13 +82,57 @@ const NavigationBar = ({ user }: { user: any }) => {
         )}
       </NavbarContent>
 
-      <NavbarContent justify="end">
+      <NavbarContent justify="end" className="gap-4">
+      <NavbarItem>
+      <Notifications />
+        </NavbarItem>
         <NavbarItem>
           <ThemeSwitcher />
         </NavbarItem>
         <NavbarItem>
           {user ? (
-            <Logout />
+            <Dropdown placement="bottom-end">
+              <DropdownTrigger>
+                <User
+                  as="button"
+                  avatarProps={{
+                    isBordered: true,
+                    src: user.image || undefined,
+                    name: getInitials(user.name),
+                    size: "sm",
+                  }}
+                  className="transition-transform pt-1"
+                  name={user.name}
+                />
+              </DropdownTrigger>
+              <DropdownMenu aria-label="User menu">
+                <DropdownItem
+                  key="profile"
+                  className="h-14 gap-2"
+                  textValue="Profile"
+                >
+                  <User
+                    name={user.name}
+                    description={user.email}
+                    classNames={{
+                      name: "text-default-600",
+                      description: "text-default-500",
+                    }}
+                  />
+                </DropdownItem>
+                <DropdownItem key="settings" textValue="Settings">
+                  Settings
+                </DropdownItem>
+                <DropdownItem
+                  key="logout"
+                  color="danger"
+                  className="text-danger"
+                  textValue="Logout"
+                >
+                  <Logout />
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
           ) : (
             <Link href="/signin" color="foreground">
               Login
