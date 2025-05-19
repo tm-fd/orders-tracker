@@ -167,7 +167,7 @@ export default function DashboardPage() {
         dateRange.end.month - 1, // Months in JS are 0-based
         dateRange.end.day
       );
-
+console.log(startDate, endDate)
       await fetchPurchaseStatusesByDateRange(startDate, endDate);
     }
   };

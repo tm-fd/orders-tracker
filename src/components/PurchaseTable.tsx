@@ -112,25 +112,22 @@ export default function PurchaseTable() {
 
   const filteredItems = useMemo(() => {
     let filteredPurchases = [...groupedPurchases];
-
-    if (activeFilters.purchaseId) {
-      filteredPurchases = filteredPurchases.filter(
-        ({ recentPurchase }) => recentPurchase.id === activeFilters.purchaseId
-      );
-    }
-
-    if (activeFilters.missingShipping) {
-      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
-        const status = purchaseStatuses[recentPurchase.id];
-        return (
-          status?.shippingInfo === null &&
-          status?.additionalInfo?.[0]?.purchase_type === "START_PACKAGE" &&
-          status?.orderStatus?.order_id != null &&
-          status.orderStatus.order_id.toString().length < 9 &&
-          status.orderStatus?.status === "completed"
+    
+    if (activeFilters.purchaseIds && activeFilters.purchaseIds.length > 0) {
+      
+      if (activeFilters.missingShipping) {
+        // Filter only the purchases that are in the purchaseIds array
+        filteredPurchases = filteredPurchases.filter(
+          ({ recentPurchase }) => activeFilters.purchaseIds.includes(recentPurchase.id)
         );
-      });
+      } else {
+        // For other notification types, just filter by purchase IDs
+        filteredPurchases = filteredPurchases.filter(
+          ({ recentPurchase }) => activeFilters.purchaseIds.includes(recentPurchase.id)
+        );
+      }
     }
+    
 
     if (selectedFilters.size > 0) {
       // Separate source filters and regular filters
@@ -255,7 +252,7 @@ export default function PurchaseTable() {
     const hasFilters =
       selectedFilters.size > 0 ||
       activeFilters.missingShipping ||
-      activeFilters.purchaseId != null;
+      (activeFilters.purchaseIds != null && activeFilters.purchaseIds.length > 0);
 
     return (
       <div className="flex flex-col gap-4">
