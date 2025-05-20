@@ -148,10 +148,11 @@ export default function AddPurchase({ currentPage }) {
         "string.empty": "City is required",
         "any.required": "City is required",
       }),
-      postcode: Joi.string().required().messages({
-        "string.empty": "Postal Code is required",
-        "any.required": "Postal Code is required",
+      state: Joi.string().allow("").optional().messages({
+        "string.empty": "State is required",
+        "any.required": "State is required",
       }),
+      postcode: Joi.string().required().messages({}),
       country: Joi.string().required().messages({
         "string.empty": "Country is required",
         "any.required": "Country is required",

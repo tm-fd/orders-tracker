@@ -117,7 +117,6 @@ export default function DashboardPage() {
   };
 
   const checkActiveButNotTrained = (status: any) => {
-    console.log(status);
     const isImported = status.additionalInfo?.some(
       (info) => info.purchase_source === "IMPORTED"
     );
@@ -157,8 +156,7 @@ export default function DashboardPage() {
           !record.user ||
           !record.user.training_session_data?.length ||
           !record.user.valid_until
-        )
-          return false;
+        ) return false;
 
         // Check if valid_until is in the future
         const validUntilDate = moment(record.user.valid_until);
@@ -175,7 +173,6 @@ export default function DashboardPage() {
 
         const twelveWeeksAgo = moment().subtract(12, "weeks");
         const sessionDate = moment(lastTrainingSession.start_time);
-
         return sessionDate.isAfter(twelveWeeksAgo);
       }
     );
