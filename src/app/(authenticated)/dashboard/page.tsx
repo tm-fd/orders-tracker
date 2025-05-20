@@ -41,8 +41,6 @@ import { parseDate } from "@internationalized/date";
 import PurchaseTrends from "@/components/PurchaseTrends";
 import ActivationsTrend from "@/components/ActivationsTrend";
 
-
-
 export default function DashboardPage() {
   const {
     purchases,
@@ -55,16 +53,18 @@ export default function DashboardPage() {
   } = usePurchaseStore();
 
   const [activeUsersNotTrained, setActiveUsersNotTrained] = useState(0);
+  const [activeNotTrainedStudents, setActiveNotTrainedStudents] = useState(0);
   const [trainedUsers, setTrainedUsers] = useState(0);
   const [invalidUsers, setInvalidUsers] = useState(0);
-  const [validUsersAndTrainedlast12Weeks, setValidUsersAndTrainedlast12Weeks] = useState(0);
+  const [validUsersAndTrainedlast12Weeks, setValidUsersAndTrainedlast12Weeks] =
+    useState(0);
   const [chartData, setChartData] = useState([]);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>({
     start: parseDate(moment().subtract(360, "days").format("YYYY-MM-DD")),
     end: parseDate(moment().format("YYYY-MM-DD")),
   });
- 
+
   const [datePrecision, setDatePrecision] = useState("exact_dates");
 
   useEffect(() => {
@@ -86,12 +86,17 @@ export default function DashboardPage() {
       Object.values(purchaseStatuses).filter(isActiveNotTrained).length;
     const invalidCount =
       Object.values(purchaseStatuses).filter(isInvalidAccount).length;
-      const validCountAndTraindLast12Weeks =
-      Object.values(purchaseStatuses).filter(isActiveAndTraindLast12Weeks).length;
+    const validCountAndTraindLast12Weeks = Object.values(
+      purchaseStatuses
+    ).filter(isActiveAndTraindLast12Weeks).length;
+    const activeNotTrainedStudentCount = Object.values(purchaseStatuses).filter(
+      checkActiveNotTrainedStudents
+    ).length;
     setActiveUsersNotTrained(inactiveTrainedCount);
     setTrainedUsers(activeTrainedCount);
     setInvalidUsers(invalidCount);
     setValidUsersAndTrainedlast12Weeks(validCountAndTraindLast12Weeks);
+    setActiveNotTrainedStudents(activeNotTrainedStudentCount);
   };
 
   const checkAccountValidity = (status: any) => {
@@ -112,7 +117,12 @@ export default function DashboardPage() {
   };
 
   const checkActiveButNotTrained = (status: any) => {
-    console.log(status.activationRecords)
+    console.log(status);
+    const isImported = status.additionalInfo?.some(
+      (info) => info.purchase_source === "IMPORTED"
+    );
+    if (isImported) return false;
+
     const activationButNotTrained = status.activationRecords?.some(
       (record) =>
         record.user !== null && record.user?.training_session_data?.length === 0
@@ -120,29 +130,56 @@ export default function DashboardPage() {
     return activationButNotTrained;
   };
 
+  const checkActiveButNotTrainedStudents = (
+    status: any,
+    onlyImported: boolean = false
+  ) => {
+    const isImported = status.additionalInfo?.some(
+      (info) => info.purchase_source === "IMPORTED"
+    );
+
+    // Return false if we're looking for non-imported but it is imported
+    // or if we're looking for imported but it's not imported
+    if (onlyImported ? !isImported : isImported) return false;
+
+    const activationButNotTrainedStudents = status.activationRecords?.some(
+      (record) =>
+        record.user !== null && record.user?.training_session_data?.length === 0
+    );
+    return activationButNotTrainedStudents;
+  };
+
   const checkActiveAndTrainedLast12Weeks = (status: any) => {
-    const activationAndTrainedRecently = status.activationRecords?.some((record) => {
-      // Check if user exists, has training data, and has valid_until date
-      if (!record.user || 
-          !record.user.training_session_data?.length || 
-          !record.user.valid_until) return false;
-      
-      // Check if valid_until is in the future
-      const validUntilDate = moment(record.user.valid_until);
-      if (!validUntilDate.isAfter(moment())) return false;
-      
-      // Get the last training session
-      const lastTrainingSession = record.user.training_session_data[record.user.training_session_data.length - 1];
-      
-      // Check if start_time exists and is within last 12 weeks
-      if (!lastTrainingSession.start_time) return false;
-      
-      const twelveWeeksAgo = moment().subtract(12, 'weeks');
-      const sessionDate = moment(lastTrainingSession.start_time);
-      
-      return sessionDate.isAfter(twelveWeeksAgo);
-    });
-    
+    const activationAndTrainedRecently = status.activationRecords?.some(
+      (record) => {
+        // Check if user exists, has training data, and has valid_until date
+        if (
+          !record.user ||
+          !record.user.training_session_data?.length ||
+          !record.user.valid_until
+        )
+          return false;
+
+        // Check if valid_until is in the future
+        const validUntilDate = moment(record.user.valid_until);
+        if (!validUntilDate.isAfter(moment())) return false;
+
+        // Get the last training session
+        const lastTrainingSession =
+          record.user.training_session_data[
+            record.user.training_session_data.length - 1
+          ];
+
+        // Check if start_time exists and is within last 12 weeks
+        if (!lastTrainingSession.start_time) return false;
+
+        const twelveWeeksAgo = moment().subtract(12, "weeks");
+        const sessionDate = moment(lastTrainingSession.start_time);
+
+        return sessionDate.isAfter(twelveWeeksAgo);
+      }
+    );
+
     return activationAndTrainedRecently;
   };
 
@@ -153,6 +190,8 @@ export default function DashboardPage() {
     checkAccountValidity(status) === true;
   const isActiveAndTraindLast12Weeks = (status: any) =>
     checkActiveAndTrainedLast12Weeks(status) === true;
+  const checkActiveNotTrainedStudents = (status: any) =>
+    checkActiveButNotTrainedStudents(status, true) === true;
 
   const handleDateRangeChange = async (dateRange: any) => {
     if (dateRange.start && dateRange.end) {
@@ -167,7 +206,7 @@ export default function DashboardPage() {
         dateRange.end.month - 1, // Months in JS are 0-based
         dateRange.end.day
       );
-console.log(startDate, endDate)
+      console.log(startDate, endDate);
       await fetchPurchaseStatusesByDateRange(startDate, endDate);
     }
   };
@@ -263,53 +302,73 @@ console.log(startDate, endDate)
         selectorIcon={<DatePickerIcon className="text-xl" />}
         visibleMonths={2}
       />
-        <Modal
-          backdrop="blur"
-          isOpen={isLoading}
-          placement="top-center"
-          classNames={{
-            closeButton: "hidden",
-            wrapper: "z-[1000000]",
-            backdrop: "fixed inset-0 z-[1000000]",  
-          }}
-          className="bg-transparent shadow-none"
-          isDismissable={false}
-          shadow="sm"
-          isKeyboardDismissDisabled={true}
-        >
-          <ModalContent>
-            {() => (
-              <>
-                <ModalBody className="flex flex-col h-20">
-                  <Spinner size="lg" color="secondary" />
-                </ModalBody>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
-      
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <Modal
+        backdrop="blur"
+        isOpen={isLoading}
+        placement="top-center"
+        classNames={{
+          closeButton: "hidden",
+          wrapper: "z-[1000000]",
+          backdrop: "fixed inset-0 z-[1000000]",
+        }}
+        className="bg-transparent shadow-none"
+        isDismissable={false}
+        shadow="sm"
+        isKeyboardDismissDisabled={true}
+      >
+        <ModalContent>
+          {() => (
+            <>
+              <ModalBody className="flex flex-col h-20">
+                <Spinner size="lg" color="secondary" />
+              </ModalBody>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
         <Card className="bg-white/10 dark:bg-default-100/50 justify-end">
           <CardHeader className="pb-2 pt-4 px-4 flex-col items-start">
-            <p className="text-tiny uppercase font-bold">Active Users & trained </p>
-            <small className="text-default-500"> 
+            <p className="text-tiny uppercase font-bold">
+              Active Users & trained{" "}
+            </p>
+            <small className="text-default-500">
               Current active accounts and trained in the last 12 weeks
             </small>
           </CardHeader>
           <CardBody className="py-4 justify-end">
-            <h1 className="text-4xl font-bold">{validUsersAndTrainedlast12Weeks}</h1>
+            <h1 className="text-4xl font-bold">
+              {validUsersAndTrainedlast12Weeks}
+            </h1>
           </CardBody>
         </Card>
 
         <Card className="bg-white/10 dark:bg-default-100/50">
           <CardHeader className="pb-2 pt-4 px-4 flex-col items-start">
-            <p className="text-tiny uppercase font-bold">Active Users - Not trained </p>
+            <p className="text-tiny uppercase font-bold">
+              Active Users - Not trained{" "}
+            </p>
             <small className="text-default-500">
-              Current activated accounts but not trained yet
+              Current activated accounts but not trained yet (Not students)
             </small>
           </CardHeader>
           <CardBody className="py-4 justify-end">
             <h1 className="text-4xl font-bold">{activeUsersNotTrained}</h1>
+          </CardBody>
+        </Card>
+
+        <Card className="bg-white/10 dark:bg-default-100/50">
+          <CardHeader className="pb-2 pt-4 px-4 flex-col items-start">
+            <p className="text-tiny uppercase font-bold">
+              Students - Not trained
+            </p>
+            <small className="text-default-500">
+              Students accounts activated but not trained yet
+            </small>
+          </CardHeader>
+          <CardBody className="py-4 justify-end">
+            <h1 className="text-4xl font-bold">{activeNotTrainedStudents}</h1>
           </CardBody>
         </Card>
 
