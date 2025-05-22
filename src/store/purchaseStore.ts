@@ -107,6 +107,7 @@ const usePurchaseStore = create<State & Actions>()(
         ),
       })),
       fetchPurchaseStatusesByDateRange: async (startDate, endDate) => {
+        console.log(startDate.toISOString(), endDate.toISOString())
         try {
           set({ isLoading: true, error: null });
           const response = await fetch(

@@ -18,7 +18,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -64,11 +64,14 @@ export default function DashboardPage() {
     start: parseDate(moment().subtract(360, "days").format("YYYY-MM-DD")),
     end: parseDate(moment().format("YYYY-MM-DD")),
   });
+  const [last12WeeksStatuses, setLast12WeeksStatuses] = useState<
+    Record<number, any>
+  >({});
+  const [isLoadingLast12Weeks, setIsLoadingLast12Weeks] = useState(false);
 
   const [datePrecision, setDatePrecision] = useState("exact_dates");
 
   useEffect(() => {
-    console.log(purchaseStatuses);
     if (!isLoading && Object.keys(purchaseStatuses).length > 0) {
       updateUserStatusCounts();
     }
@@ -78,7 +81,39 @@ export default function DashboardPage() {
     handleDateRangeChange(dateRange);
   }, [dateRange]);
 
-  const updateUserStatusCounts = () => {
+  const updateUserStatusCounts = async () => {
+    const statuses = await checkActiveAndTrainedLast12Weeks();
+    const validCountAndTraindLast12Weeks = Object.values(statuses).filter(
+      (status: any) => {
+        const activationAndTrainedRecently = status.activationRecords?.some(
+          (record) => {
+            if (
+              !record.user ||
+              !record.user.training_session_data?.length ||
+              !record.user.valid_until
+            )
+              return false;
+
+            const validUntilDate = moment(record.user.valid_until);
+            if (!validUntilDate.isAfter(moment())) return false;
+
+            const lastTrainingSession =
+              record.user.training_session_data[
+                record.user.training_session_data.length - 1
+              ];
+
+            if (!lastTrainingSession.start_time) return false;
+
+            const twelveWeeksAgo = moment().subtract(12, "weeks");
+            const sessionDate = moment(lastTrainingSession.start_time);
+            return sessionDate.isAfter(twelveWeeksAgo);
+          }
+        );
+
+        return activationAndTrainedRecently;
+      }
+    ).length;
+
     // Count users who have started training and are not invalid
     const activeTrainedCount =
       Object.values(purchaseStatuses).filter(isTrained).length;
@@ -86,12 +121,14 @@ export default function DashboardPage() {
       Object.values(purchaseStatuses).filter(isActiveNotTrained).length;
     const invalidCount =
       Object.values(purchaseStatuses).filter(isInvalidAccount).length;
-    const validCountAndTraindLast12Weeks = Object.values(
-      purchaseStatuses
-    ).filter(isActiveAndTraindLast12Weeks).length;
     const activeNotTrainedStudentCount = Object.values(purchaseStatuses).filter(
       checkActiveNotTrainedStudents
     ).length;
+
+    // Count users who have started training and are not invalid
+    // const validCountAndTraindLast12Weeks = Object.values(purchaseStatuses).filter(
+    //   (status) => isActiveAndTraindLast12Weeks(status);
+    // ).length;
     setActiveUsersNotTrained(inactiveTrainedCount);
     setTrainedUsers(activeTrainedCount);
     setInvalidUsers(invalidCount);
@@ -148,37 +185,76 @@ export default function DashboardPage() {
     return activationButNotTrainedStudents;
   };
 
-  const checkActiveAndTrainedLast12Weeks = (status: any) => {
-    const activationAndTrainedRecently = status.activationRecords?.some(
-      (record) => {
-        // Check if user exists, has training data, and has valid_until date
-        if (
-          !record.user ||
-          !record.user.training_session_data?.length ||
-          !record.user.valid_until
-        ) return false;
+  // const checkActiveAndTrainedLast12Weeks = (status: any) => {
+  //   const activationAndTrainedRecently = status.activationRecords?.some(
+  //     (record) => {
 
-        // Check if valid_until is in the future
-        const validUntilDate = moment(record.user.valid_until);
-        if (!validUntilDate.isAfter(moment())) return false;
+  //       // Check if user exists, has training data, and has valid_until date
+  //       if (
+  //         !record.user ||
+  //         !record.user.training_session_data?.length ||
+  //         !record.user.valid_until
+  //       ) return false;
 
-        // Get the last training session
-        const lastTrainingSession =
-          record.user.training_session_data[
-            record.user.training_session_data.length - 1
-          ];
+  //       // Check if valid_until is in the future
+  //       const validUntilDate = moment(record.user.valid_until);
+  //       if (!validUntilDate.isAfter(moment())) return false;
 
-        // Check if start_time exists and is within last 12 weeks
-        if (!lastTrainingSession.start_time) return false;
+  //       // Get the last training session
+  //       const lastTrainingSession =
+  //         record.user.training_session_data[
+  //           record.user.training_session_data.length - 1
+  //         ];
 
-        const twelveWeeksAgo = moment().subtract(12, "weeks");
-        const sessionDate = moment(lastTrainingSession.start_time);
-        return sessionDate.isAfter(twelveWeeksAgo);
+  //       // Check if start_time exists and is within last 12 weeks
+  //       if (!lastTrainingSession.start_time) return false;
+
+  //       const twelveWeeksAgo = moment().subtract(12, "weeks");
+  //       const sessionDate = moment(lastTrainingSession.start_time);
+  //       return sessionDate.isAfter(twelveWeeksAgo);
+  //     }
+  //   );
+  //   return activationAndTrainedRecently;
+  // };
+  const checkActiveAndTrainedLast12Weeks = useCallback(async () => {
+    try {
+      if (Object.keys(last12WeeksStatuses).length === 0) {
+        setIsLoadingLast12Weeks(true);
+        const startDate = parseDate("2023-12-01");
+        const endDate = parseDate(moment().format("YYYY-MM-DD"));
+        const apiStartDate = new Date(
+          startDate.year,
+          startDate.month - 1, // Months in JS are 0-based
+          startDate.day
+        );
+
+        const apiEndDate = new Date(
+          endDate.year,
+          endDate.month - 1,
+          endDate.day
+        );
+
+        const response = await fetch(
+          `${
+            process.env.CLOUDRUN_DEV_URL
+          }/purchases/all-info-by-date-range?startDate=${apiStartDate.toISOString()}&endDate=${apiEndDate.toISOString()}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch last 12 weeks statuses");
+        }
+
+        const data = await response.json();
+        setLast12WeeksStatuses(data);
+        setIsLoadingLast12Weeks(false);
+        return data;
       }
-    );
-
-    return activationAndTrainedRecently;
-  };
+      return last12WeeksStatuses;
+    } catch (error) {
+      console.error("Error fetching last 12 weeks data:", error);
+      return {};
+    }
+  }, [last12WeeksStatuses]);
 
   const isTrained = (status: any) => checkStartedTraining(status) === true;
   const isActiveNotTrained = (status: any) =>
@@ -203,7 +279,6 @@ export default function DashboardPage() {
         dateRange.end.month - 1, // Months in JS are 0-based
         dateRange.end.day
       );
-      console.log(startDate, endDate);
       await fetchPurchaseStatusesByDateRange(startDate, endDate);
     }
   };
@@ -261,7 +336,6 @@ export default function DashboardPage() {
     }
 
     if (start) {
-      console.log(start, end);
       setDateRange({ start, end });
     }
   };
@@ -293,15 +367,19 @@ export default function DashboardPage() {
         }
         aria-label="Date range"
         DatePickerIcon={"Date range"}
-        value={dateRange}
         pageBehavior="single"
+        value={dateRange}
         onChange={setDateRange}
         selectorIcon={<DatePickerIcon className="text-xl" />}
         visibleMonths={2}
+        // calendarProps={{
+        //   focusedValue: dateRange?.end,
+        // }}
+        // showMonthAndYearPickers
       />
       <Modal
         backdrop="blur"
-        isOpen={isLoading}
+        isOpen={isLoading || isLoadingLast12Weeks}
         placement="top-center"
         classNames={{
           closeButton: "hidden",

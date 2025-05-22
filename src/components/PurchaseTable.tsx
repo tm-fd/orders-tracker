@@ -27,6 +27,7 @@ import { SearchIcon } from "./icons";
 import usePurchaseStore from "@/store/purchaseStore";
 import { getSource, PurchaseSource } from "@/app/utils";
 import AddPurchase from "@/components/AddPurchase";
+import moment from "moment";
 
 export default function PurchaseTable() {
   const {
@@ -54,6 +55,7 @@ export default function PurchaseTable() {
       { value: "multiple_licenses", label: "Multiple Licenses" },
       { value: "show_hidden", label: "Show Hidden" },
       { value: "unused_activation", label: "Unused Activation Code" },
+      { value: "active_not_trained", label: "Active not trained" },
     ],
   };
 
@@ -78,7 +80,7 @@ export default function PurchaseTable() {
       }
       return false;
     };
-
+    if (searchInObject(purchase)) console.log(purchase);
     return searchInObject(purchase);
   };
 
@@ -109,6 +111,18 @@ export default function PurchaseTable() {
       return { recentPurchase, oldPurchases };
     });
   }, [purchases]);
+
+  const checkActiveNotTrainedUsers = (purchase) => {
+    if (!purchase.Activations?.length) return false;
+
+    const activatedNotTrained = purchase.Activations?.some((record) => {
+      if (!record.user) return false;
+
+      if (!record.user?.training_session_data?.length) return true;
+    });
+
+    return activatedNotTrained;
+  };
 
   const filteredItems = useMemo(() => {
     let filteredPurchases = [...groupedPurchases];
@@ -171,13 +185,15 @@ export default function PurchaseTable() {
                   return recentPurchase.numberOfLicenses > 1;
 
                 case "unused_activation":
-                  console.log(recentPurchase);
                   return (
                     recentPurchase.numberOfLicenses !==
                     recentPurchase?.Activations?.filter(
                       (activation) => activation.user
                     ).length
                   );
+
+                case "active_not_trained":
+                  return checkActiveNotTrainedUsers(recentPurchase);
 
                 default:
                   return true;
@@ -192,8 +208,10 @@ export default function PurchaseTable() {
 
     // Apply search filter
     if (hasSearchFilter) {
-      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) =>
-        searchPurchase(recentPurchase, filterValue)
+      filteredPurchases = filteredPurchases.filter(
+        ({ recentPurchase, oldPurchases }) =>
+          searchPurchase(recentPurchase, filterValue) ||
+          oldPurchases.some((purchase) => searchPurchase(purchase, filterValue))
       );
     }
 
