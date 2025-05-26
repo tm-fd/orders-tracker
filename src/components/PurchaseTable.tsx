@@ -80,7 +80,6 @@ export default function PurchaseTable() {
       }
       return false;
     };
-    if (searchInObject(purchase)) console.log(purchase);
     return searchInObject(purchase);
   };
 
@@ -130,8 +129,12 @@ export default function PurchaseTable() {
     if (activeFilters.purchaseIds && activeFilters.purchaseIds.length > 0) {
       if (activeFilters.missingShipping) {
         // Filter only the purchases that are in the purchaseIds array
-        filteredPurchases = filteredPurchases.filter(({ recentPurchase }) =>
-          activeFilters.purchaseIds.includes(recentPurchase.id)
+        filteredPurchases = filteredPurchases.filter(
+          ({ recentPurchase, oldPurchases }) =>
+            activeFilters.purchaseIds.includes(recentPurchase.id) ||
+            oldPurchases.some((oldPurchase) =>
+              activeFilters.purchaseIds.includes(oldPurchase.id)
+            )
         );
       } else {
         // For other notification types, just filter by purchase IDs
@@ -205,7 +208,6 @@ export default function PurchaseTable() {
         }
       );
     }
-
     // Apply search filter
     if (hasSearchFilter) {
       filteredPurchases = filteredPurchases.filter(
