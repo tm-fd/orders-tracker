@@ -18,7 +18,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -40,8 +40,9 @@ import moment from "moment";
 import { parseDate } from "@internationalized/date";
 import PurchaseTrends from "@/components/PurchaseTrends";
 import ActivationsTrend from "@/components/ActivationsTrend";
-
-
+import "../../dark.css";
+import Flatpickr from "react-flatpickr";
+import { useTheme } from "next-themes";
 
 export default function DashboardPage() {
   const {
@@ -55,20 +56,31 @@ export default function DashboardPage() {
   } = usePurchaseStore();
 
   const [activeUsersNotTrained, setActiveUsersNotTrained] = useState(0);
+  const [activeNotTrainedStudents, setActiveNotTrainedStudents] = useState(0);
   const [trainedUsers, setTrainedUsers] = useState(0);
   const [invalidUsers, setInvalidUsers] = useState(0);
-  const [validUsersAndTrainedlast12Weeks, setValidUsersAndTrainedlast12Weeks] = useState(0);
+  const [validUsersAndTrainedlast12Weeks, setValidUsersAndTrainedlast12Weeks] =
+    useState(0);
   const [chartData, setChartData] = useState([]);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>({
     start: parseDate(moment().subtract(360, "days").format("YYYY-MM-DD")),
     end: parseDate(moment().format("YYYY-MM-DD")),
   });
- 
+  const [last12WeeksStatuses, setLast12WeeksStatuses] = useState<
+    Record<number, any>
+  >({});
+  const [isLoadingLast12Weeks, setIsLoadingLast12Weeks] = useState(false);
   const [datePrecision, setDatePrecision] = useState("exact_dates");
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    console.log(purchaseStatuses);
+    console.log(theme);
+    const root = document.documentElement;
+    root.setAttribute("data-theme", theme === "dark" ? "dark" : "light");
+  }, [theme]);
+
+  useEffect(() => {
     if (!isLoading && Object.keys(purchaseStatuses).length > 0) {
       updateUserStatusCounts();
     }
@@ -78,7 +90,39 @@ export default function DashboardPage() {
     handleDateRangeChange(dateRange);
   }, [dateRange]);
 
-  const updateUserStatusCounts = () => {
+  const updateUserStatusCounts = async () => {
+    const statuses = await checkActiveAndTrainedLast12Weeks();
+    const validCountAndTraindLast12Weeks = Object.values(statuses).filter(
+      (status: any) => {
+        const activationAndTrainedRecently = status.activationRecords?.some(
+          (record) => {
+            if (
+              !record.user ||
+              !record.user.training_session_data?.length ||
+              !record.user.valid_until
+            )
+              return false;
+
+            const validUntilDate = moment(record.user.valid_until);
+            if (!validUntilDate.isAfter(moment())) return false;
+
+            const lastTrainingSession =
+              record.user.training_session_data[
+                record.user.training_session_data.length - 1
+              ];
+
+            if (!lastTrainingSession.start_time) return false;
+
+            const twelveWeeksAgo = moment().subtract(12, "weeks");
+            const sessionDate = moment(lastTrainingSession.start_time);
+            return sessionDate.isAfter(twelveWeeksAgo);
+          }
+        );
+
+        return activationAndTrainedRecently;
+      }
+    ).length;
+
     // Count users who have started training and are not invalid
     const activeTrainedCount =
       Object.values(purchaseStatuses).filter(isTrained).length;
@@ -86,12 +130,19 @@ export default function DashboardPage() {
       Object.values(purchaseStatuses).filter(isActiveNotTrained).length;
     const invalidCount =
       Object.values(purchaseStatuses).filter(isInvalidAccount).length;
-      const validCountAndTraindLast12Weeks =
-      Object.values(purchaseStatuses).filter(isActiveAndTraindLast12Weeks).length;
+    const activeNotTrainedStudentCount = Object.values(purchaseStatuses).filter(
+      checkActiveNotTrainedStudents
+    ).length;
+
+    // Count users who have started training and are not invalid
+    // const validCountAndTraindLast12Weeks = Object.values(purchaseStatuses).filter(
+    //   (status) => isActiveAndTraindLast12Weeks(status);
+    // ).length;
     setActiveUsersNotTrained(inactiveTrainedCount);
     setTrainedUsers(activeTrainedCount);
     setInvalidUsers(invalidCount);
     setValidUsersAndTrainedlast12Weeks(validCountAndTraindLast12Weeks);
+    setActiveNotTrainedStudents(activeNotTrainedStudentCount);
   };
 
   const checkAccountValidity = (status: any) => {
@@ -112,7 +163,11 @@ export default function DashboardPage() {
   };
 
   const checkActiveButNotTrained = (status: any) => {
-    console.log(status.activationRecords)
+    const isImported = status.additionalInfo?.some(
+      (info) => info.purchase_source === "IMPORTED"
+    );
+    if (isImported) return false;
+
     const activationButNotTrained = status.activationRecords?.some(
       (record) =>
         record.user !== null && record.user?.training_session_data?.length === 0
@@ -120,31 +175,95 @@ export default function DashboardPage() {
     return activationButNotTrained;
   };
 
-  const checkActiveAndTrainedLast12Weeks = (status: any) => {
-    const activationAndTrainedRecently = status.activationRecords?.some((record) => {
-      // Check if user exists, has training data, and has valid_until date
-      if (!record.user || 
-          !record.user.training_session_data?.length || 
-          !record.user.valid_until) return false;
-      
-      // Check if valid_until is in the future
-      const validUntilDate = moment(record.user.valid_until);
-      if (!validUntilDate.isAfter(moment())) return false;
-      
-      // Get the last training session
-      const lastTrainingSession = record.user.training_session_data[record.user.training_session_data.length - 1];
-      
-      // Check if start_time exists and is within last 12 weeks
-      if (!lastTrainingSession.start_time) return false;
-      
-      const twelveWeeksAgo = moment().subtract(12, 'weeks');
-      const sessionDate = moment(lastTrainingSession.start_time);
-      
-      return sessionDate.isAfter(twelveWeeksAgo);
-    });
-    
-    return activationAndTrainedRecently;
+  const checkActiveButNotTrainedStudents = (
+    status: any,
+    onlyImported: boolean = false
+  ) => {
+    const isImported = status.additionalInfo?.some(
+      (info) => info.purchase_source === "IMPORTED"
+    );
+
+    // Return false if we're looking for non-imported but it is imported
+    // or if we're looking for imported but it's not imported
+    if (onlyImported ? !isImported : isImported) return false;
+
+    const activationButNotTrainedStudents = status.activationRecords?.some(
+      (record) =>
+        record.user !== null && record.user?.training_session_data?.length === 0
+    );
+    return activationButNotTrainedStudents;
   };
+
+  // const checkActiveAndTrainedLast12Weeks = (status: any) => {
+  //   const activationAndTrainedRecently = status.activationRecords?.some(
+  //     (record) => {
+
+  //       // Check if user exists, has training data, and has valid_until date
+  //       if (
+  //         !record.user ||
+  //         !record.user.training_session_data?.length ||
+  //         !record.user.valid_until
+  //       ) return false;
+
+  //       // Check if valid_until is in the future
+  //       const validUntilDate = moment(record.user.valid_until);
+  //       if (!validUntilDate.isAfter(moment())) return false;
+
+  //       // Get the last training session
+  //       const lastTrainingSession =
+  //         record.user.training_session_data[
+  //           record.user.training_session_data.length - 1
+  //         ];
+
+  //       // Check if start_time exists and is within last 12 weeks
+  //       if (!lastTrainingSession.start_time) return false;
+
+  //       const twelveWeeksAgo = moment().subtract(12, "weeks");
+  //       const sessionDate = moment(lastTrainingSession.start_time);
+  //       return sessionDate.isAfter(twelveWeeksAgo);
+  //     }
+  //   );
+  //   return activationAndTrainedRecently;
+  // };
+  const checkActiveAndTrainedLast12Weeks = useCallback(async () => {
+    try {
+      if (Object.keys(last12WeeksStatuses).length === 0) {
+        setIsLoadingLast12Weeks(true);
+        const startDate = parseDate("2023-12-01");
+        const endDate = parseDate(moment().format("YYYY-MM-DD"));
+        const apiStartDate = new Date(
+          startDate.year,
+          startDate.month - 1, // Months in JS are 0-based
+          startDate.day
+        );
+
+        const apiEndDate = new Date(
+          endDate.year,
+          endDate.month - 1,
+          endDate.day
+        );
+
+        const response = await fetch(
+          `${
+            process.env.CLOUDRUN_DEV_URL
+          }/purchases/all-info-by-date-range?startDate=${apiStartDate.toISOString()}&endDate=${apiEndDate.toISOString()}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch last 12 weeks statuses");
+        }
+
+        const data = await response.json();
+        setLast12WeeksStatuses(data);
+        setIsLoadingLast12Weeks(false);
+        return data;
+      }
+      return last12WeeksStatuses;
+    } catch (error) {
+      console.error("Error fetching last 12 weeks data:", error);
+      return {};
+    }
+  }, [last12WeeksStatuses]);
 
   const isTrained = (status: any) => checkStartedTraining(status) === true;
   const isActiveNotTrained = (status: any) =>
@@ -153,6 +272,8 @@ export default function DashboardPage() {
     checkAccountValidity(status) === true;
   const isActiveAndTraindLast12Weeks = (status: any) =>
     checkActiveAndTrainedLast12Weeks(status) === true;
+  const checkActiveNotTrainedStudents = (status: any) =>
+    checkActiveButNotTrainedStudents(status, true) === true;
 
   const handleDateRangeChange = async (dateRange: any) => {
     if (dateRange.start && dateRange.end) {
@@ -167,7 +288,6 @@ export default function DashboardPage() {
         dateRange.end.month - 1, // Months in JS are 0-based
         dateRange.end.day
       );
-
       await fetchPurchaseStatusesByDateRange(startDate, endDate);
     }
   };
@@ -225,7 +345,6 @@ export default function DashboardPage() {
     }
 
     if (start) {
-      console.log(start, end);
       setDateRange({ start, end });
     }
   };
@@ -233,7 +352,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen w-full p-8 space-y-6">
       <h1 className="text-2xl font-bold">Dashboard</h1>
-      <DateRangePicker
+      {/* <DateRangePicker
         CalendarBottomContent={
           <RadioGroup
             aria-label="Date precision"
@@ -257,59 +376,169 @@ export default function DashboardPage() {
         }
         aria-label="Date range"
         DatePickerIcon={"Date range"}
-        value={dateRange}
         pageBehavior="single"
+        value={dateRange}
         onChange={setDateRange}
         selectorIcon={<DatePickerIcon className="text-xl" />}
         visibleMonths={2}
-      />
-        <Modal
-          backdrop="blur"
-          isOpen={isLoading}
-          placement="top-center"
-          classNames={{
-            closeButton: "hidden",
-            wrapper: "z-[1000000]",
-            backdrop: "fixed inset-0 z-[1000000]",  
+        // calendarProps={{
+        //   focusedValue: dateRange?.end,
+        // }}
+        // showMonthAndYearPickers
+      /> */}
+      <div className="flex items-center gap-2 w-full max-w-md relative">
+        <Flatpickr
+          options={{
+            mode: "range",
+            weekNumbers: true,
+            enableTime: false,
+            dateFormat: "Y-m-d",
+            defaultDate: [
+              dateRange?.start
+                ? new Date(
+                    dateRange.start.year,
+                    dateRange.start.month - 1,
+                    dateRange.start.day
+                  )
+                : moment().subtract(360, "days").toDate(),
+              dateRange?.end
+                ? new Date(
+                    dateRange.end.year,
+                    dateRange.end.month - 1,
+                    dateRange.end.day
+                  )
+                : moment().toDate(),
+            ],
+            positionElement: null,
+            position: "auto right",
+            onReady: (selectedDates, dateStr, instance) => {
+              // Force initial position to end date
+              const endDate = dateRange?.end
+                ? new Date(
+                    dateRange.end.year,
+                    dateRange.end.month - 1,
+                    dateRange.end.day
+                  )
+                : moment().toDate();
+              instance.currentYear = endDate.getFullYear();
+              instance.currentMonth = endDate.getMonth();
+              instance.redraw();
+
+              // Ensure end date is selected
+              instance.latestSelectedDateObj = instance.selectedDates[1];
+            },
+            onOpen: (selectedDates, dateStr, instance) => {
+              // Jump to end date's month
+              const endDate = instance.selectedDates[1];
+              if (endDate) {
+                instance.currentYear = endDate.getFullYear();
+                instance.currentMonth = endDate.getMonth();
+                instance.redraw();
+
+                // Force focus on end date
+                instance.latestSelectedDateObj = instance.selectedDates[1];
+              }
+            },
+            onChange: (dates) => {
+              if (dates.length === 2) {
+                const [start, end] = dates;
+                setDateRange({
+                  start: parseDate(moment(start).format("YYYY-MM-DD")),
+                  end: parseDate(moment(end).format("YYYY-MM-DD")),
+                });
+              }
+            },
           }}
-          className="bg-transparent shadow-none"
-          isDismissable={false}
-          shadow="sm"
-          isKeyboardDismissDisabled={true}
-        >
-          <ModalContent>
-            {() => (
-              <>
-                <ModalBody className="flex flex-col h-20">
-                  <Spinner size="lg" color="secondary" />
-                </ModalBody>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
-      
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          value={[
+            dateRange?.start
+              ? new Date(
+                  dateRange.start.year,
+                  dateRange.start.month - 1,
+                  dateRange.start.day
+                )
+              : moment().subtract(360, "days").toDate(),
+            dateRange?.end
+              ? new Date(
+                  dateRange.end.year,
+                  dateRange.end.month - 1,
+                  dateRange.end.day
+                )
+              : moment().toDate(),
+          ]}
+          className="w-full px-3 py-2 border rounded-md focus:outline-none"
+          placeholder="Select date range..."
+        />
+        <div className="absolute inset-y-0 right-3 pl-3 flex items-center pointer-events-none">
+          <DatePickerIcon className="w-5 h-5 text-gray-400" />
+        </div>
+      </div>
+      <Modal
+        backdrop="blur"
+        isOpen={isLoading || isLoadingLast12Weeks}
+        placement="top-center"
+        classNames={{
+          closeButton: "hidden",
+          wrapper: "z-[1000000]",
+          backdrop: "fixed inset-0 z-[1000000]",
+        }}
+        className="bg-transparent shadow-none"
+        isDismissable={false}
+        shadow="sm"
+        isKeyboardDismissDisabled={true}
+      >
+        <ModalContent>
+          {() => (
+            <>
+              <ModalBody className="flex flex-col h-20">
+                <Spinner size="lg" color="secondary" />
+              </ModalBody>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
         <Card className="bg-white/10 dark:bg-default-100/50 justify-end">
           <CardHeader className="pb-2 pt-4 px-4 flex-col items-start">
-            <p className="text-tiny uppercase font-bold">Active Users & trained </p>
-            <small className="text-default-500"> 
+            <p className="text-tiny uppercase font-bold">
+              Active Users & trained{" "}
+            </p>
+            <small className="text-default-500">
               Current active accounts and trained in the last 12 weeks
             </small>
           </CardHeader>
           <CardBody className="py-4 justify-end">
-            <h1 className="text-4xl font-bold">{validUsersAndTrainedlast12Weeks}</h1>
+            <h1 className="text-4xl font-bold">
+              {validUsersAndTrainedlast12Weeks}
+            </h1>
           </CardBody>
         </Card>
 
         <Card className="bg-white/10 dark:bg-default-100/50">
           <CardHeader className="pb-2 pt-4 px-4 flex-col items-start">
-            <p className="text-tiny uppercase font-bold">Active Users - Not trained </p>
+            <p className="text-tiny uppercase font-bold">
+              Active Users - Not trained{" "}
+            </p>
             <small className="text-default-500">
-              Current activated accounts but not trained yet
+              Current activated accounts but not trained yet (Not students)
             </small>
           </CardHeader>
           <CardBody className="py-4 justify-end">
             <h1 className="text-4xl font-bold">{activeUsersNotTrained}</h1>
+          </CardBody>
+        </Card>
+
+        <Card className="bg-white/10 dark:bg-default-100/50">
+          <CardHeader className="pb-2 pt-4 px-4 flex-col items-start">
+            <p className="text-tiny uppercase font-bold">
+              Students - Not trained
+            </p>
+            <small className="text-default-500">
+              Students accounts activated but not trained yet
+            </small>
+          </CardHeader>
+          <CardBody className="py-4 justify-end">
+            <h1 className="text-4xl font-bold">{activeNotTrainedStudents}</h1>
           </CardBody>
         </Card>
 

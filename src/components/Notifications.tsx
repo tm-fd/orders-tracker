@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Dropdown,
   DropdownTrigger,
@@ -11,71 +11,85 @@ import {
   Badge,
 } from "@heroui/react";
 import { Bell } from "lucide-react";
+import { io } from "socket.io-client";
+import moment from "moment";
+import { useNotificationStore, NotificationType } from "@/store/notificationStore";
 import usePurchaseStore from "@/store/purchaseStore";
-import { useNotificationStore } from "@/store/notificationStore";
-
-const fetchNotifications = async () => {
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - 2);
-  
-  const response = await fetch(
-    `${process.env.CLOUDRUN_DEV_URL}/purchases/all-info-by-date-range?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
-  );
-  if (!response.ok) throw new Error('Failed to fetch notifications');
-  return response.json();
-};
 
 const Notifications = () => {
   const { setActiveFilters } = usePurchaseStore();
   const {
     notifications,
-    setNotifications,
+    loading,
+    counts,
+    fetchNotifications,
     markAsRead,
     markAllAsRead,
+    getCount,
   } = useNotificationStore();
 
-  const processNotifications = useCallback((statuses: any) => {
-    if (!statuses) return;
+  // Filter to show only SHIPPING_MISSING notifications
+  const shippingNotifications = useMemo(() => {
+    return notifications.filter(
+      (notification) => notification.type === NotificationType.SHIPPING_MISSING
+    );
+  }, [notifications]);
 
-    const newNotifications = Object.entries(statuses).map(([purchaseId, status]: [string, any]) => {
-      if (
-        status.shippingInfo === null &&
-        status.additionalInfo?.[0]?.purchase_type === "START_PACKAGE" &&
-        status.orderStatus?.order_id?.toString().length < 9 &&
-        status.orderStatus?.status === "completed"
-      ) {
-        return {
-          id: `shipping-${purchaseId}`,
-          title: "Shipping Information Missing",
-          message: `Order #${status.orderStatus?.order_id} is missing shipping information`,
-          time: new Date().toLocaleString(),
-          read: false,
-          purchaseId: Number(purchaseId),
-        };
-      }
-      return null;
-    }).filter(Boolean);
+  // Update counts to reflect only shipping notifications
+  const shippingCounts = useMemo(() => {
+    return {
+      total: shippingNotifications.length,
+      unread: shippingNotifications.filter(n => !n.read).length
+    };
+  }, [shippingNotifications]);
 
-    setNotifications(newNotifications);
-  }, [setNotifications]);
-
-  // Fetch notifications only on component mount
   useEffect(() => {
-    fetchNotifications()
-      .then(processNotifications)
-      .catch(error => console.error('Error fetching notifications:', error));
-  }, []); // Empty dependency array means this runs once on mount
+    // Initial fetch with date range
+    const endDate = moment().endOf('day');
+    const startDate = moment().subtract(2, 'months').startOf('day');
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+    fetchNotifications({
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      limit: 30,
+    });
 
-  const handleNotificationClick = (purchaseId: number) => {
-    setActiveFilters({ purchaseId, missingShipping: false });
-    markAsRead(purchaseId);
-  };
+    // Initial count fetch
+    getCount();
 
-  const handleShowAllMissingShipping = () => {
-    setActiveFilters({ missingShipping: true, purchaseId: undefined });
+    // Setup WebSocket connection
+    const socket = io(`${process.env.CLOUDRUN_DEV_URL}/purchases/notifications`);
+
+    socket.on('connect', () => {
+      console.log('Connected to notification socket');
+    });
+
+    socket.on('newNotification', (notification) => {
+      fetchNotifications(); // Refresh notifications
+      getCount(); // Update counts
+    });
+
+    socket.on('notificationUpdate', (notification) => {
+      fetchNotifications(); // Refresh notifications
+      getCount(); // Update counts
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification.read) {
+      await markAsRead(notification.id, true);
+    }
+
+    if (notification.metadata?.purchaseIds?.length > 0) {
+      setActiveFilters({
+        purchaseIds: notification.metadata.purchaseIds,
+        missingShipping: true,
+      });
+    }
   };
 
   return (
@@ -87,9 +101,9 @@ const Notifications = () => {
           className="w-9 h-9 rounded-full relative"
         >
           <Bell className="h-[1.2rem] w-[1.2rem]" />
-          {unreadCount > 0 && (
+          {shippingCounts.unread > 0 && (
             <Badge
-              content={unreadCount}
+              content={shippingCounts.unread}
               color="danger"
               shape="circle"
               size="sm"
@@ -101,7 +115,7 @@ const Notifications = () => {
       <DropdownMenu
         aria-label="Notifications"
         className="w-80"
-        emptyContent="No notifications yet"
+        emptyContent={loading ? "Loading..." : "No shipping notifications"}
       >
         <DropdownItem
           key="notifications-header"
@@ -109,54 +123,42 @@ const Notifications = () => {
           textValue="Notifications"
         >
           <div className="flex justify-between items-center w-full">
-            <h3 className="text-lg font-semibold">Notifications</h3>
-            <div className="flex gap-2">
-              {unreadCount > 0 && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-sm"
-                  onPress={markAllAsRead}
-                >
-                  Mark all as read
-                </Button>
-              )}
-            </div>
+            <h3 className="text-lg font-semibold">
+              Shipping Notifications ({shippingCounts.total})
+            </h3>
+            {shippingCounts.unread > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-sm"
+                onPress={markAllAsRead}
+              >
+                Mark all as read
+              </Button>
+            )}
           </div>
         </DropdownItem>
         <DropdownItem key="notifications-divider" className="h-px bg-divider" />
         <DropdownSection className="max-h-[300px] overflow-y-auto">
-          {notifications.map((notification) => (
+          {shippingNotifications.map((notification) => (
             <DropdownItem
               key={notification.id}
-              className={`py-2 ${!notification.read ? 'bg-default-100' : ''} cursor-pointer`}
+              className={`py-2 ${!notification.read ? 'bg-default-100' : ''}`}
               textValue={notification.title}
-              onClick={() => handleNotificationClick(notification.purchaseId)}
+              onPress={() => handleNotificationClick(notification)}
             >
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">{notification.title}</span>
-                  <span className="text-xs text-default-400">{notification.time}</span>
+                  <span className="text-xs text-default-400">
+                    {moment(notification.createdAt).fromNow()}
+                  </span>
                 </div>
                 <p className="text-sm text-default-500">{notification.message}</p>
               </div>
             </DropdownItem>
           ))}
         </DropdownSection>
-        <DropdownItem 
-          key="show-all-missing-shipping" 
-          className="h-14 gap-2"
-        >
-          <Button
-            size="sm"
-            variant="flat"
-            color="secondary"
-            className="w-full"
-            onPress={handleShowAllMissingShipping}
-          >
-            Show All Missing Shipping
-          </Button>
-        </DropdownItem>
       </DropdownMenu>
     </Dropdown>
   );

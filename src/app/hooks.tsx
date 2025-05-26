@@ -32,9 +32,9 @@ function JoiValidatePurchase(obj: any) {
         'string.email': `Email must be valid`,
         'string.required': `Email is required`,
       }),
-    number_of_licenses: Joi.number().min(1).max(1000).required().messages({
+    number_of_licenses: Joi.number().min(0).max(1000).required().messages({
       'number.required': `Number of Licenses is required`,
-      'number.min': `Number of Licenses must be greater than or equal to 1`,
+      'number.min': `Number of Licenses must be greater than or equal to 0`,
     }),
     duration: Joi.number().min(1).required().messages({
       'number.min': `Duration is required`,

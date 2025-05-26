@@ -53,7 +53,7 @@ interface State {
   currentPage: number;
   activeFilters: {
     missingShipping: boolean;
-    purchaseId?: number;
+    purchaseIds?: number[];
   };
 }
 
@@ -66,7 +66,7 @@ interface Actions {
   addPurchase: (purchase: ZPurchase) => void;
   updatePurchase: (updatedPurchase: PurchaseObj) => void;
   fetchPurchaseStatusesByDateRange: (startDate: Date, endDate: Date) => Promise<void>;
-  setActiveFilters: (filters: { missingShipping?: boolean; purchaseId?: number }) => void;
+  setActiveFilters: (filters: { missingShipping?: boolean; purchaseIds?: number[] }) => void;
   clearActiveFilters: () => void;
   reset: () => void;
 }
@@ -79,7 +79,7 @@ const initialState: State = {
   currentPage: 0,
   activeFilters: {
     missingShipping: false,
-    purchaseId: undefined,
+    purchaseIds: undefined,
   },
 };
 
@@ -107,6 +107,7 @@ const usePurchaseStore = create<State & Actions>()(
         ),
       })),
       fetchPurchaseStatusesByDateRange: async (startDate, endDate) => {
+        console.log(startDate.toISOString(), endDate.toISOString())
         try {
           set({ isLoading: true, error: null });
           const response = await fetch(
@@ -135,7 +136,7 @@ const usePurchaseStore = create<State & Actions>()(
       clearActiveFilters: () => set((state) => ({
         activeFilters: {
           missingShipping: false,
-          purchaseId: undefined,
+          purchaseIds: undefined,
         }
       })),
       reset: () => set(initialState),

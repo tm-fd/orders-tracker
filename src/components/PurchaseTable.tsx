@@ -27,6 +27,7 @@ import { SearchIcon } from "./icons";
 import usePurchaseStore from "@/store/purchaseStore";
 import { getSource, PurchaseSource } from "@/app/utils";
 import AddPurchase from "@/components/AddPurchase";
+import moment from "moment";
 
 export default function PurchaseTable() {
   const {
@@ -54,6 +55,7 @@ export default function PurchaseTable() {
       { value: "multiple_licenses", label: "Multiple Licenses" },
       { value: "show_hidden", label: "Show Hidden" },
       { value: "unused_activation", label: "Unused Activation Code" },
+      { value: "active_not_trained", label: "Active not trained" },
     ],
   };
 
@@ -78,7 +80,7 @@ export default function PurchaseTable() {
       }
       return false;
     };
-
+    if (searchInObject(purchase)) console.log(purchase);
     return searchInObject(purchase);
   };
 
@@ -110,26 +112,33 @@ export default function PurchaseTable() {
     });
   }, [purchases]);
 
+  const checkActiveNotTrainedUsers = (purchase) => {
+    if (!purchase.Activations?.length) return false;
+
+    const activatedNotTrained = purchase.Activations?.some((record) => {
+      if (!record.user) return false;
+
+      if (!record.user?.training_session_data?.length) return true;
+    });
+
+    return activatedNotTrained;
+  };
+
   const filteredItems = useMemo(() => {
     let filteredPurchases = [...groupedPurchases];
 
-    if (activeFilters.purchaseId) {
-      filteredPurchases = filteredPurchases.filter(
-        ({ recentPurchase }) => recentPurchase.id === activeFilters.purchaseId
-      );
-    }
-
-    if (activeFilters.missingShipping) {
-      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) => {
-        const status = purchaseStatuses[recentPurchase.id];
-        return (
-          status?.shippingInfo === null &&
-          status?.additionalInfo?.[0]?.purchase_type === "START_PACKAGE" &&
-          status?.orderStatus?.order_id != null &&
-          status.orderStatus.order_id.toString().length < 9 &&
-          status.orderStatus?.status === "completed"
+    if (activeFilters.purchaseIds && activeFilters.purchaseIds.length > 0) {
+      if (activeFilters.missingShipping) {
+        // Filter only the purchases that are in the purchaseIds array
+        filteredPurchases = filteredPurchases.filter(({ recentPurchase }) =>
+          activeFilters.purchaseIds.includes(recentPurchase.id)
         );
-      });
+      } else {
+        // For other notification types, just filter by purchase IDs
+        filteredPurchases = filteredPurchases.filter(({ recentPurchase }) =>
+          activeFilters.purchaseIds.includes(recentPurchase.id)
+        );
+      }
     }
 
     if (selectedFilters.size > 0) {
@@ -176,9 +185,15 @@ export default function PurchaseTable() {
                   return recentPurchase.numberOfLicenses > 1;
 
                 case "unused_activation":
-                  return !recentPurchase?.Activations?.some(
-                    (activation) => activation.user
+                  return (
+                    recentPurchase.numberOfLicenses !==
+                    recentPurchase?.Activations?.filter(
+                      (activation) => activation.user
+                    ).length
                   );
+
+                case "active_not_trained":
+                  return checkActiveNotTrainedUsers(recentPurchase);
 
                 default:
                   return true;
@@ -193,8 +208,10 @@ export default function PurchaseTable() {
 
     // Apply search filter
     if (hasSearchFilter) {
-      filteredPurchases = filteredPurchases.filter(({ recentPurchase }) =>
-        searchPurchase(recentPurchase, filterValue)
+      filteredPurchases = filteredPurchases.filter(
+        ({ recentPurchase, oldPurchases }) =>
+          searchPurchase(recentPurchase, filterValue) ||
+          oldPurchases.some((purchase) => searchPurchase(purchase, filterValue))
       );
     }
 
@@ -255,7 +272,8 @@ export default function PurchaseTable() {
     const hasFilters =
       selectedFilters.size > 0 ||
       activeFilters.missingShipping ||
-      activeFilters.purchaseId != null;
+      (activeFilters.purchaseIds != null &&
+        activeFilters.purchaseIds.length > 0);
 
     return (
       <div className="flex flex-col gap-4">
