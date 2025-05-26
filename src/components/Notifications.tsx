@@ -57,12 +57,18 @@ const Notifications = () => {
     // Initial count fetch
     getCount();
 
-    // Setup WebSocket connection
-    const socket = io(`${process.env.CLOUDRUN_DEV_URL}/purchases/notifications`);
+    // Setup WebSocket connection with normalized URL
+  const baseUrl = process.env.CLOUDRUN_DEV_URL || '';
+  // Ensure URL has trailing slash to match backend expectation
+  const normalizedUrl = baseUrl.endsWith('/') 
+    ? `${baseUrl}purchases/notifications` 
+    : `${baseUrl}/purchases/notifications`;
+    
+  const socket = io(normalizedUrl);
 
-    socket.on('connect', () => {
-      console.log('Connected to notification socket');
-    });
+  socket.on('connect', () => {
+    console.log('Connected to notification socket');
+  });
 
     socket.on('newNotification', (notification) => {
       fetchNotifications(); // Refresh notifications
