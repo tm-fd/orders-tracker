@@ -40,6 +40,9 @@ import moment from "moment";
 import { parseDate } from "@internationalized/date";
 import PurchaseTrends from "@/components/PurchaseTrends";
 import ActivationsTrend from "@/components/ActivationsTrend";
+import "../../dark.css";
+import Flatpickr from "react-flatpickr";
+import { useTheme } from "next-themes";
 
 export default function DashboardPage() {
   const {
@@ -68,8 +71,14 @@ export default function DashboardPage() {
     Record<number, any>
   >({});
   const [isLoadingLast12Weeks, setIsLoadingLast12Weeks] = useState(false);
-
   const [datePrecision, setDatePrecision] = useState("exact_dates");
+  const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    console.log(theme);
+    const root = document.documentElement;
+    root.setAttribute("data-theme", theme === "dark" ? "dark" : "light");
+  }, [theme]);
 
   useEffect(() => {
     if (!isLoading && Object.keys(purchaseStatuses).length > 0) {
@@ -343,7 +352,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen w-full p-8 space-y-6">
       <h1 className="text-2xl font-bold">Dashboard</h1>
-      <DateRangePicker
+      {/* <DateRangePicker
         CalendarBottomContent={
           <RadioGroup
             aria-label="Date precision"
@@ -376,7 +385,93 @@ export default function DashboardPage() {
         //   focusedValue: dateRange?.end,
         // }}
         // showMonthAndYearPickers
-      />
+      /> */}
+      <div className="flex items-center gap-2 w-full max-w-md relative">
+        <Flatpickr
+          options={{
+            mode: "range",
+            weekNumbers: true,
+            enableTime: false,
+            dateFormat: "Y-m-d",
+            defaultDate: [
+              dateRange?.start
+                ? new Date(
+                    dateRange.start.year,
+                    dateRange.start.month - 1,
+                    dateRange.start.day
+                  )
+                : moment().subtract(360, "days").toDate(),
+              dateRange?.end
+                ? new Date(
+                    dateRange.end.year,
+                    dateRange.end.month - 1,
+                    dateRange.end.day
+                  )
+                : moment().toDate(),
+            ],
+            positionElement: null,
+            position: "auto right",
+            onReady: (selectedDates, dateStr, instance) => {
+              // Force initial position to end date
+              const endDate = dateRange?.end
+                ? new Date(
+                    dateRange.end.year,
+                    dateRange.end.month - 1,
+                    dateRange.end.day
+                  )
+                : moment().toDate();
+              instance.currentYear = endDate.getFullYear();
+              instance.currentMonth = endDate.getMonth();
+              instance.redraw();
+
+              // Ensure end date is selected
+              instance.latestSelectedDateObj = instance.selectedDates[1];
+            },
+            onOpen: (selectedDates, dateStr, instance) => {
+              // Jump to end date's month
+              const endDate = instance.selectedDates[1];
+              if (endDate) {
+                instance.currentYear = endDate.getFullYear();
+                instance.currentMonth = endDate.getMonth();
+                instance.redraw();
+
+                // Force focus on end date
+                instance.latestSelectedDateObj = instance.selectedDates[1];
+              }
+            },
+            onChange: (dates) => {
+              if (dates.length === 2) {
+                const [start, end] = dates;
+                setDateRange({
+                  start: parseDate(moment(start).format("YYYY-MM-DD")),
+                  end: parseDate(moment(end).format("YYYY-MM-DD")),
+                });
+              }
+            },
+          }}
+          value={[
+            dateRange?.start
+              ? new Date(
+                  dateRange.start.year,
+                  dateRange.start.month - 1,
+                  dateRange.start.day
+                )
+              : moment().subtract(360, "days").toDate(),
+            dateRange?.end
+              ? new Date(
+                  dateRange.end.year,
+                  dateRange.end.month - 1,
+                  dateRange.end.day
+                )
+              : moment().toDate(),
+          ]}
+          className="w-full px-3 py-2 border rounded-md focus:outline-none"
+          placeholder="Select date range..."
+        />
+        <div className="absolute inset-y-0 right-3 pl-3 flex items-center pointer-events-none">
+          <DatePickerIcon className="w-5 h-5 text-gray-400" />
+        </div>
+      </div>
       <Modal
         backdrop="blur"
         isOpen={isLoading || isLoadingLast12Weeks}
