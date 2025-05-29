@@ -36,6 +36,11 @@ const Sidebar = () => {
       href: "/purchases",
       icon: ShoppingCart,
     },
+    {
+      name: "Logs",
+      href: "/logs",
+      icon: FileText,
+    },
     // {
     //   name: "Users",
     //   href: "/#",
@@ -68,7 +73,9 @@ const Sidebar = () => {
       <NavbarContent className="h-full flex-col gap-0 items-start ">
         <NavbarBrand className="justify-start py-6">
           <div
-            className={`flex items-center justify-center gap-2 ${isOpen ? "w-40" : "w-20"}`}
+            className={`flex items-center justify-center gap-2 ${
+              isOpen ? "w-40" : "w-20"
+            }`}
           >
             <div className="flex items-center gap-2">
               <Image
