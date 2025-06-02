@@ -16,8 +16,9 @@ export default function LogViewer() {
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
-  const [filter, setFilter] = useState("");
-  const [level, setLevel] = useState("");
+  const [filter, setFilter] = useState(""); // full-text “message” filter
+  const [level, setLevel] = useState(""); // level filter
+  const [userKey, setUserKey] = useState(""); // user UUID filter
   const [logs, setLogs] = useState<Message[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -50,8 +51,10 @@ export default function LogViewer() {
         from: String(from),
         size: String(pageSize),
       });
+
       if (filter) params.set("q", filter);
       if (level) params.set("level", level);
+      if (userKey) params.set("key", userKey);
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_LOGS_API_URL}/logs?${params.toString()}`,
@@ -60,6 +63,7 @@ export default function LogViewer() {
         }
       );
       if (!res.ok) throw new Error(res.statusText);
+
       const { items, total } = (await res.json()) as {
         items: Message[];
         total: number;
@@ -70,7 +74,7 @@ export default function LogViewer() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, filter, level]);
+  }, [page, pageSize, filter, level, userKey]);
 
   useEffect(() => {
     fetchData();
@@ -81,20 +85,36 @@ export default function LogViewer() {
       <h1 className="text-3xl font-bold">Log Viewer</h1>
 
       {/* Controls */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex flex-wrap items-center gap-4 mb-8">
         <Input
           size="md"
           className="flex-1 min-w-[200px]"
           placeholder="Search text"
           value={filter}
-          onValueChange={setFilter}
+          onValueChange={(v) => {
+            setFilter(v);
+            setPage(1);
+          }}
         />
         <Input
           size="md"
           className="w-32"
           placeholder="Level"
           value={level}
-          onValueChange={setLevel}
+          onValueChange={(v) => {
+            setLevel(v);
+            setPage(1);
+          }}
+        />
+        <Input
+          size="md"
+          className="w-48"
+          placeholder="User ID"
+          value={userKey}
+          onValueChange={(v) => {
+            setUserKey(v);
+            setPage(1);
+          }}
         />
         <Input
           size="md"
@@ -151,7 +171,6 @@ export default function LogViewer() {
                           {new Date(log["@timestamp"]).toLocaleString()}
                         </td>
                         <td className="p-3">{log.level}</td>
-                        {/* Removed truncate/max-w—allow full message */}
                         <td className="p-3">{log.message}</td>
                         <td className="p-3">{log.key}</td>
                       </tr>
