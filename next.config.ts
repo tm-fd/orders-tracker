@@ -31,6 +31,7 @@ const nextConfig: NextConfig = {
     LICENSE_PRODUCT_ID: process.env.LICENSE_PRODUCT_ID,
     WOO_API_KEY: process.env.WOO_API_KEY,
     WOO_API_SECERT: process.env.WOO_API_SECERT,
+    NEXT_PUBLIC_LOGS_API_URL: process.env.NEXT_PUBLIC_LOGS_API_URL,
   },
   webpack: (config, { isServer }) => {
     config.module.rules.push({

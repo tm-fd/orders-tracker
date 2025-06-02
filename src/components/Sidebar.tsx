@@ -2,6 +2,7 @@
 
 import { useSidebarStore } from "@/store/sidebar";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   LayoutDashboard,
   Users,
@@ -20,11 +21,13 @@ import {
 } from "@heroui/react";
 import Image from "next/image";
 
+
 const Sidebar = () => {
   const isOpen = useSidebarStore((state) => state.isOpen);
   const toggle = useSidebarStore((state) => state.toggle);
   const pathname = usePathname();
-
+  const { data: session } = useSession();
+console.log(session);
   const navigationItems = [
     {
       name: "Dashboard",
@@ -36,11 +39,13 @@ const Sidebar = () => {
       href: "/purchases",
       icon: ShoppingCart,
     },
-    {
-      name: "Logs",
-      href: "/logs",
-      icon: FileText,
-    },
+    ...(session?.user?.role === "ADMIN" ? [
+      {
+        name: "Logs",
+        href: "/logs",
+        icon: FileText,
+      }
+    ] : []),
     // {
     //   name: "Users",
     //   href: "/#",
