@@ -261,14 +261,14 @@ export default function AddPurchase({ currentPage }) {
       ...initPurchaseObj,
       orderNumber: orderNumberFromWoo,
     };
-
     try {
       const purchaseRes = await axios.post(
         `${process.env.CLOUDRUN_DEV_URL}/purchases/addPurchase`,
         purchaseObj,
         {
           headers: {
-            Authorization: `Bearer ${session?.user?.sessionToken}`,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.user?.sessionToken}`,
           },
         }
       );
