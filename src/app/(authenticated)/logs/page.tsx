@@ -10,6 +10,7 @@ interface Message {
   key: string;
   meta?: Record<string, any>;
 }
+
 export default function LogViewer() {
   const PAGE_SIZE = 50;
 
@@ -53,7 +54,7 @@ export default function LogViewer() {
       if (level) params.set("level", level);
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_LOGS_API_URL}/logs?${params}`,
+        `${process.env.NEXT_PUBLIC_LOGS_API_URL}/logs?${params.toString()}`,
         {
           cache: "no-store",
         }
@@ -110,22 +111,14 @@ export default function LogViewer() {
 
       {/* Table */}
       <div className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-        <div
-          className="p-6 overflow-x-auto  bg-paperBgLight 
-                  dark:bg-paperBgDark "
-        >
+        <div className="p-6 overflow-x-auto bg-paperBgLight dark:bg-paperBgDark">
           {loading ? (
             <div className="flex justify-center py-12">
               <Spinner size="lg" />
             </div>
           ) : (
-            <table className="min-w-full table-fixed border-separate border-spacing-y-4">
-              <thead
-                className="
-                  bg-headerBgLight text-headerTextLight
-                  dark:bg-headerBgDark dark:text-headerTextDark
-                "
-              >
+            <table className="min-w-full table-auto border-separate border-spacing-y-4">
+              <thead className="bg-headerBgLight text-headerTextLight dark:bg-headerBgDark dark:text-headerTextDark">
                 <tr>
                   <th className="w-12 p-3 rounded-tl-2xl rounded-bl-2xl"></th>
                   <th className="p-3 text-left">Timestamp</th>
@@ -137,51 +130,62 @@ export default function LogViewer() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log, idx) => (
-                  <React.Fragment key={`${log["@timestamp"]}-${idx}`}>
-                    <tr
-                      onClick={() => toggle(`${log["@timestamp"]}-${idx}`)}
-                      className={`
-                        cursor-pointer hover:bg-gray-700
-                        ${
-                          expanded.has(`${log["@timestamp"]}-${idx}`)
-                            ? "bg-gray-700"
-                            : ""
-                        }
-                        ${idx % 2 === 1 ? "bg-gray-800" : ""}
-                      `}
-                    >
-                      <td className="p-3 text-center">
-                        {expanded.has(`${log["@timestamp"]}-${idx}`)
-                          ? "–"
-                          : "+"}
-                      </td>
-                      <td className="p-3">
-                        {new Date(log["@timestamp"]).toLocaleString()}
-                      </td>
-                      <td className="p-3">{log.level}</td>
-                      <td className="p-3 truncate max-w-[150px]">
-                        {log.message}
-                      </td>
-                      <td className="p-3 truncate max-w-[150px]">{log.key}</td>
-                    </tr>
-                    {expanded.has(`${log["@timestamp"]}-${idx}`) && (
-                      <tr>
-                        <td colSpan={5} className="p-0">
-                          <div className="m-0 p-4 text-sm text-gray-200 bg-gray-700">
-                            <div>Level: {log.level}</div>
-                            <div>User ID: {log.key}</div>
-                            {log.meta && (
-                              <div>
-                                meta: <code>{formatMeta(log.meta)}</code>
-                              </div>
-                            )}
-                          </div>
+                {logs.map((log, idx) => {
+                  const rowId = `${log["@timestamp"]}-${idx}`;
+                  const isOpen = expanded.has(rowId);
+
+                  return (
+                    <React.Fragment key={rowId}>
+                      <tr
+                        onClick={() => toggle(rowId)}
+                        className={`
+                          cursor-pointer hover:bg-gray-700
+                          ${isOpen ? "bg-gray-700" : ""}
+                          ${idx % 2 === 1 ? "bg-gray-800" : ""}
+                        `}
+                      >
+                        <td className="p-3 text-center">
+                          {isOpen ? "–" : "+"}
                         </td>
+                        <td className="p-3">
+                          {new Date(log["@timestamp"]).toLocaleString()}
+                        </td>
+                        <td className="p-3">{log.level}</td>
+                        {/* Removed truncate/max-w—allow full message */}
+                        <td className="p-3">{log.message}</td>
+                        <td className="p-3">{log.key}</td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                ))}
+
+                      {isOpen && (
+                        <tr>
+                          <td colSpan={5} className="p-0">
+                            <div className="m-0 p-4 text-sm text-gray-200 bg-gray-700 space-y-1">
+                              <div>
+                                <strong>Timestamp:</strong>{" "}
+                                {new Date(log["@timestamp"]).toLocaleString()}
+                              </div>
+                              <div>
+                                <strong>Level:</strong> {log.level}
+                              </div>
+                              <div>
+                                <strong>Message:</strong> {log.message}
+                              </div>
+                              <div>
+                                <strong>User ID:</strong> {log.key}
+                              </div>
+                              {log.meta && (
+                                <div>
+                                  <strong>Meta:</strong>{" "}
+                                  <code>{formatMeta(log.meta)}</code>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           )}
