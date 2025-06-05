@@ -5,7 +5,8 @@ import axios from 'axios';
 export enum NotificationType {
   SHIPPING_MISSING = 'SHIPPING_MISSING',
   PURCHASE_STATUS = 'PURCHASE_STATUS',
-  TRAINING_REMINDER = 'TRAINING_REMINDER'
+  TRAINING_REMINDER = 'TRAINING_REMINDER',
+  TODO_REMINDER = 'TODO_REMINDER'
 }
 
 interface MetadataDto {

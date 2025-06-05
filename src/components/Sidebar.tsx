@@ -11,6 +11,7 @@ import {
   Bell,
   FileText,
   Menu,
+  CheckSquare,
 } from "lucide-react";
 import {
   Navbar,
@@ -40,6 +41,11 @@ console.log(session);
       icon: ShoppingCart,
     },
     ...(session?.user?.role === "ADMIN" ? [
+      {
+        name: "Todos",
+        href: "/todos",
+        icon: CheckSquare,
+      },
       {
         name: "Logs",
         href: "/logs",
