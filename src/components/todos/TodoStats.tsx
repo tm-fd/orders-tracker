@@ -19,21 +19,21 @@ const TodoStats: React.FC = () => {
   }, []);
 
   const statCards = [
-    {
-      title: "Total Todos",
-      value: stats.total,
-      icon: ClipboardList,
-      color: "bg-blue-500",
-      textColor: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
+    // {
+    //   title: "Total Todos",
+    //   value: stats.total,
+    //   icon: ClipboardList,
+    //   color: "bg-blue-500",
+    //   textColor: "text-blue-600",
+    //   bgColor: "bg-blue-50",
+    // },
     {
       title: "Pending",
       value: stats.pending,
       icon: Clock,
       color: "bg-yellow-500",
       textColor: "text-yellow-600",
-      bgColor: "bg-yellow-50",
+      bgColor: "bg-yellow-200",
     },
     {
       title: "In Progress",
@@ -41,15 +41,15 @@ const TodoStats: React.FC = () => {
       icon: Play,
       color: "bg-purple-500",
       textColor: "text-purple-600",
-      bgColor: "bg-purple-50",
+      bgColor: "bg-purple-200",
     },
     {
       title: "Completed",
       value: stats.completed,
       icon: CheckCircle,
-      color: "bg-green-500",
+      color: "bg-green-600",
       textColor: "text-green-600",
-      bgColor: "bg-green-50",
+      bgColor: "bg-green-100",
     },
     {
       title: "Overdue",
@@ -57,12 +57,12 @@ const TodoStats: React.FC = () => {
       icon: AlertTriangle,
       color: "bg-red-500",
       textColor: "text-red-600",
-      bgColor: "bg-red-50",
+      bgColor: "bg-red-100",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {statCards.map((stat, index) => {
         const IconComponent = stat.icon;
 

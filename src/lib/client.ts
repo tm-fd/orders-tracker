@@ -1,4 +1,4 @@
-import ActivationRecords from "@/components/ActivationRecords";
+import ActivationRecords from "@/components/purchases/ActivationRecords";
 
 const createQueryString = (params?: Record<string, string | number>) => {
     if (!params) return '';

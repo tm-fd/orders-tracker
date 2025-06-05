@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect, use } from 'react';
 import { useDisclosure, Tooltip } from "@heroui/react";
-import { EditIcon, EyeIconLoading, LoadingBars } from './icons';
-import { SharedModal } from './SharedModal';
+import { EditIcon, EyeIconLoading, LoadingBars } from '../icons';
+import { SharedModal } from '../SharedModal';
 import { EditPurchase } from './EditPurchase';
 import OrderDetails from './OrderDetails';
 import usePurchaseStore, { PurchaseObj } from '@/store/purchaseStore';

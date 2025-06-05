@@ -23,10 +23,10 @@ import {
   columns,
   renderCell,
 } from "@/app/(authenticated)/purchases/columns";
-import { SearchIcon } from "./icons";
+import { SearchIcon } from "../icons";
 import usePurchaseStore from "@/store/purchaseStore";
 import { getSource, PurchaseSource } from "@/app/utils";
-import AddPurchase from "@/components/AddPurchase";
+import AddPurchase from "@/components/purchases/AddPurchase";
 import moment from "moment";
 
 export default function PurchaseTable() {

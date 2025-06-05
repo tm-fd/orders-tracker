@@ -11,7 +11,7 @@ import {
   DatePicker,
   TimeInput,
 } from '@heroui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { X } from 'lucide-react';
 import { useTodoStore, Todo, TodoPriority, CreateTodoDto, UpdateTodoDto } from '@/store/todoStore';
 import { parseDate, parseTime, getLocalTimeZone } from '@internationalized/date';
 import moment from 'moment';

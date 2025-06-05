@@ -16,8 +16,8 @@ import {
   Button,
   Badge,
 } from "@heroui/react";
-import ThemeSwitcher from "./ThemeSwitcher";
-import Logout from "./Logout";
+import ThemeSwitcher from "../ThemeSwitcher";
+import Logout from "../Logout";
 import { useSidebarStore } from "@/store/sidebar";
 import { Bell, ChevronDown } from "lucide-react";
 import Notifications from "./Notifications";

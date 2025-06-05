@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Spinner, Chip, Link, Divider, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
-import { PurchaseObj } from '../store/purchaseStore';
+import { PurchaseObj } from '../../store/purchaseStore';
 import ActivationRecords from './ActivationRecords';
 import { useActivationStore } from '@/store/purchaseActivactionsStore';
 import { useAdditionalInfo } from '@/app/hooks';

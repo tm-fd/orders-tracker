@@ -1,9 +1,9 @@
 // src/app/(authenticated)/layout.tsx
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import Sidebar from '@/components/Sidebar';
-import NavigationBar from '@/components/NavigationBar';
-import { ClientLayoutWrapper } from '@/components/ClientLayoutWrapper';
+import Sidebar from '@/components/navigation/Sidebar';
+import NavigationBar from '@/components/notifications/NavigationBar';
+import { ClientLayoutWrapper } from '@/components/navigation/ClientLayoutWrapper';
 
 export default async function ProtectedLayout({
   children,

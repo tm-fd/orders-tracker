@@ -31,7 +31,7 @@ const Notifications = () => {
   // Filter to show only SHIPPING_MISSING notifications
   const shippingNotifications = useMemo(() => {
     return notifications.filter(
-      (notification) => notification.type === NotificationType.SHIPPING_MISSING
+      (notification) => notification.type === NotificationType.SHIPPING_MISSING || notification.type === NotificationType.TODO_REMINDER
     );
   }, [notifications]);
 
