@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Button,
   Input,
@@ -10,11 +10,22 @@ import {
   Chip,
   DatePicker,
   TimeInput,
-} from '@heroui/react';
-import { X } from 'lucide-react';
-import { useTodoStore, Todo, TodoPriority, CreateTodoDto, UpdateTodoDto } from '@/store/todoStore';
-import { parseDate, parseTime, getLocalTimeZone } from '@internationalized/date';
-import moment from 'moment';
+} from "@heroui/react";
+import { X } from "lucide-react";
+import {
+  useTodoStore,
+  Todo,
+  TodoPriority,
+  CreateTodoDto,
+  UpdateTodoDto,
+} from "@/store/todoStore";
+import {
+  parseDate,
+  parseTime,
+  getLocalTimeZone,
+} from "@internationalized/date";
+import moment from "moment";
+import { useSession } from 'next-auth/react';
 
 interface TodoFormProps {
   todo?: Todo | null;
@@ -23,56 +34,76 @@ interface TodoFormProps {
 }
 
 const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
+  const { data: session } = useSession();
   const { createTodo, updateTodo, loading } = useTodoStore();
-  
+
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     priority: TodoPriority.MEDIUM,
-    due_date: '',
-    reminder_time: '',
+    due_date: "",
+    reminder_time: "",
     tags: [] as string[],
   });
-  
-  const [newTag, setNewTag] = useState('');
+
+  const [newTag, setNewTag] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (todo) {
       setFormData({
         title: todo.title,
-        description: todo.description || '',
+        description: todo.description || "",
         priority: todo.priority,
-        due_date: todo.due_date ? moment(todo.due_date).format('YYYY-MM-DD') : '',
-        reminder_time: todo.reminder_time ? moment(todo.reminder_time).format('YYYY-MM-DDTHH:mm') : '',
+        due_date: todo.due_date
+          ? moment(todo.due_date).format("YYYY-MM-DD")
+          : "",
+        reminder_time: todo.reminder_time
+          ? moment(todo.reminder_time).format("YYYY-MM-DDTHH:mm")
+          : "",
         tags: todo.tags || [],
       });
     }
   }, [todo]);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-
+  useEffect(() => {
     if (formData.due_date && formData.reminder_time) {
-      const dueDate = new Date(formData.due_date);
-      const reminderDate = new Date(formData.reminder_time);
-      
-      if (reminderDate > dueDate) {
-        newErrors.reminder_time = 'Reminder time cannot be after due date';
+      const dueDate = moment(formData.due_date).endOf('day');
+      const reminderDate = moment(formData.reminder_time);
+
+      if (reminderDate.isSameOrBefore(dueDate)) {
+        // Clear the error if the dates are now valid
+        setErrors((prev) => ({
+          ...prev,
+          reminder_time: undefined,
+        }));
       }
     }
+  }, [formData.due_date, formData.reminder_time]);
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const validateForm = () => {
+  const newErrors: Record<string, string> = {};
+
+  if (!formData.title.trim()) {
+    newErrors.title = "Title is required";
+  }
+
+  if (formData.due_date && formData.reminder_time) {
+    const dueDate = moment(formData.due_date).endOf('day'); // Use end of day for due date
+    const reminderDate = moment(formData.reminder_time);
+
+    if (reminderDate.isAfter(dueDate)) {
+      newErrors.reminder_time = "Reminder time cannot be after due date";
+    }
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -88,36 +119,39 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
       };
 
       if (todo) {
-        await updateTodo(todo.id, todoData);
+        await updateTodo(todo.id, todoData, session.user.sessionToken);
       } else {
-        await createTodo(todoData);
+        await createTodo({
+        ...todoData,
+        userId: session.user.sessionToken
+      });
       }
 
       onSuccess();
     } catch (error) {
-      console.error('Failed to save todo:', error);
+      console.error("Failed to save todo:", error);
     }
   };
 
   const addTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim()]
+        tags: [...prev.tags, newTag.trim()],
       }));
-      setNewTag('');
+      setNewTag("");
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
     }));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       addTag();
     }
@@ -129,7 +163,9 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
         label="Title"
         placeholder="Enter todo title"
         value={formData.title}
-        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, title: e.target.value }))
+        }
         isRequired
         errorMessage={errors.title}
         isInvalid={!!errors.title}
@@ -139,14 +175,21 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
         label="Description"
         placeholder="Enter todo description (optional)"
         value={formData.description}
-        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, description: e.target.value }))
+        }
         minRows={3}
       />
 
       <Select
         label="Priority"
         selectedKeys={[formData.priority]}
-        onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as TodoPriority }))}
+        onChange={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            priority: e.target.value as TodoPriority,
+          }))
+        }
       >
         {Object.values(TodoPriority).map((priority) => (
           <SelectItem key={priority} value={priority}>
@@ -160,7 +203,13 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
         label="Due Date"
         placeholder="Select due date (optional)"
         value={formData.due_date}
-        onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
+        onChange={(e) => {
+          setFormData((prev) => ({ ...prev, due_date: e.target.value }));
+          setErrors((prev) => ({
+            ...prev,
+            reminder_time: undefined,
+          }));
+        }}
       />
 
       <Input
@@ -168,7 +217,13 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
         label="Reminder Time"
         placeholder="Select reminder time (optional)"
         value={formData.reminder_time}
-        onChange={(e) => setFormData(prev => ({ ...prev, reminder_time: e.target.value }))}
+        onChange={(e) => {
+          setFormData((prev) => ({ ...prev, reminder_time: e.target.value }));
+          setErrors((prev) => ({
+            ...prev,
+            reminder_time: undefined,
+          }));
+        }}
         errorMessage={errors.reminder_time}
         isInvalid={!!errors.reminder_time}
         description="You'll receive a notification at this time"
@@ -193,7 +248,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
             Add
           </Button>
         </div>
-        
+
         {formData.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {formData.tags.map((tag, index) => (
@@ -219,12 +274,8 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
         >
           Cancel
         </Button>
-        <Button
-          type="submit"
-          color="secondary"
-          isLoading={loading}
-        >
-          {todo ? 'Update Todo' : 'Create Todo'}
+        <Button type="submit" color="secondary" isLoading={loading}>
+          {todo ? "Update Todo" : "Create Todo"}
         </Button>
       </div>
     </form>

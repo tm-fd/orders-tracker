@@ -88,9 +88,9 @@ interface TodoStore {
   
   // Actions
   fetchTodos: (query?: TodoQueryDto) => Promise<void>;
-  createTodo: (todo: CreateTodoDto) => Promise<Todo>;
-  updateTodo: (id: number, todo: UpdateTodoDto) => Promise<Todo>;
-  deleteTodo: (id: number) => Promise<void>;
+  createTodo: (todo: CreateTodoDto & { userId: string }) => Promise<Todo>;
+  updateTodo: (id: number, todo: UpdateTodoDto, userId: string) => Promise<Todo>;
+  deleteTodo: (id: number, userId: string) => Promise<void>;
   getTodo: (id: number) => Promise<Todo>;
   getStats: (userId?: string) => Promise<void>;
   clearError: () => void;
@@ -126,12 +126,24 @@ export const useTodoStore = create<TodoStore>()(
         }
       },
 
-      createTodo: async (todo: CreateTodoDto) => {
+      createTodo: async (todo: CreateTodoDto & { userId: string }) => {
         try {
+                    const { userId, ...todoData } = todo;
+
+          if (!userId) {
+            throw new Error('User not authenticated');
+          }
+
           set({ loading: true, error: null });
           const response = await axios.post(
             `${process.env.CLOUDRUN_DEV_URL}/todos`,
-            todo
+            todoData,
+            {
+              headers: {
+                'Authorization': `Bearer ${userId}`,
+                'Content-Type': 'application/json'
+              }
+            }
           );
           
           // Add the new todo to the list
@@ -141,22 +153,32 @@ export const useTodoStore = create<TodoStore>()(
           }));
           
           // Refresh stats
-          await get().getStats();
+          await get().getStats(userId);
           
           return response.data;
         } catch (error: any) {
           const errorMessage = error.response?.data?.message || 'Failed to create todo';
           set({ error: errorMessage, loading: false });
-          throw new Error(errorMessage);
+          // throw new Error(errorMessage);
+          throw error;
         }
       },
 
-      updateTodo: async (id: number, todo: UpdateTodoDto) => {
+      updateTodo: async (id: number, todo: UpdateTodoDto, userId: string) => {
         try {
+          if (!userId) {
+            throw new Error('User not authenticated');
+          }
+
           set({ loading: true, error: null });
           const response = await axios.patch(
             `${process.env.CLOUDRUN_DEV_URL}/todos/${id}`,
-            todo
+            todo,
+            {
+              headers: {
+                'Authorization': `Bearer ${userId}`
+              }
+            }
           );
           
           // Update the todo in the list
@@ -168,7 +190,7 @@ export const useTodoStore = create<TodoStore>()(
           }));
           
           // Refresh stats
-          await get().getStats();
+          await get().getStats(userId);
           
           return response.data;
         } catch (error: any) {
@@ -178,10 +200,20 @@ export const useTodoStore = create<TodoStore>()(
         }
       },
 
-      deleteTodo: async (id: number) => {
+      deleteTodo: async (id: number, userId: string) => {
         try {
+          if (!userId) {
+            throw new Error('User not authenticated');
+          }
+
           set({ loading: true, error: null });
-          await axios.delete(`${process.env.CLOUDRUN_DEV_URL}/todos/${id}`);
+          await axios.delete(`${process.env.CLOUDRUN_DEV_URL}/todos/${id}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${userId}`
+              }
+            }
+          );
           
           // Remove the todo from the list
           set((state) => ({
@@ -190,7 +222,7 @@ export const useTodoStore = create<TodoStore>()(
           }));
           
           // Refresh stats
-          await get().getStats();
+          await get().getStats(userId);
         } catch (error: any) {
           const errorMessage = error.response?.data?.message || 'Failed to delete todo';
           set({ error: errorMessage, loading: false });
@@ -215,10 +247,19 @@ export const useTodoStore = create<TodoStore>()(
 
       getStats: async (userId?: string) => {
         try {
+          if (!userId) {
+            throw new Error('User not authenticated');
+          }
+
           const params = userId ? { user_id: userId } : {};
           const response = await axios.get(
             `${process.env.CLOUDRUN_DEV_URL}/todos/stats`,
-            { params }
+            {
+              params: { user_id: userId },
+              headers: {
+                'Authorization': `Bearer ${userId}`
+              }
+            }
           );
           set({ stats: response.data });
         } catch (error: any) {
@@ -244,6 +285,7 @@ export const useTodoStore = create<TodoStore>()(
       partialize: (state) => ({
         todos: state.todos,
         stats: state.stats,
+         userId: state.userId,
       }),
     }
   )

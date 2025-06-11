@@ -10,12 +10,14 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useTodoStore } from "@/store/todoStore";
+import { useSession } from 'next-auth/react';
 
-const TodoStats: React.FC = () => {
+const TodoStats = () => {
+  const { data: session } = useSession();
   const { stats, getStats } = useTodoStore();
 
   useEffect(() => {
-    getStats();
+    getStats(session.user.sessionToken);
   }, []);
 
   const statCards = [

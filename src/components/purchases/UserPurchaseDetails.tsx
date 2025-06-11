@@ -115,24 +115,24 @@ export default function UserPurchaseDetails({
         }
         // Fetch order email
         let orderEmail = null;
-        try {
-          const emailRes = await fetch('/api/handleOrdersEmail', {
-            cache: 'no-store',
-          });
-          if (emailRes.ok) {
-            const emailData = await emailRes.json();
-            const sentEmails = emailData.filter(
-              (emailObj) => emailObj.ContactAlt === purchase.email.toLowerCase()
-            );
-            orderEmail = sentEmails.find(
-              (email) =>
-                email.Subject === 'Tack för din order från imvi labs!' ||
-                email.Subject.includes('förnyelseorder')
-            )?.Status;
-          }
-        } catch (emailError) {
-          console.error('Error fetching order email:', emailError);
-        }
+        // try {
+        //   const emailRes = await fetch('/api/handleOrdersEmail', {
+        //     cache: 'no-store',
+        //   });
+        //   if (emailRes.ok) {
+        //     const emailData = await emailRes.json();
+        //     const sentEmails = emailData.filter(
+        //       (emailObj) => emailObj.ContactAlt === purchase.email.toLowerCase()
+        //     );
+        //     orderEmail = sentEmails.find(
+        //       (email) =>
+        //         email.Subject === 'Tack för din order från imvi labs!' ||
+        //         email.Subject.includes('förnyelseorder')
+        //     )?.Status;
+        //   }
+        // } catch (emailError) {
+        //   console.error('Error fetching order email:', emailError);
+        // }
 
         let shippingInfo = null;
         try {
@@ -141,13 +141,11 @@ export default function UserPurchaseDetails({
             `${process.env.CLOUDRUN_DEV_URL}/purchases/shipping-info/${purchase.id}`,
             { cache: 'no-store' }
           );
-
           if (shippingRes.status !== 404) {
             if (shippingRes.ok) {
               const shippingData = await shippingRes.json();
-
               if (shippingData?.tracking_number) {
-                if (shippingData.tracking_number.startsWith('UU')) {
+                if (/^[A-Za-z]{2}/.test(shippingData.tracking_number)) {
                   try {
                     const pnResponse = await axios.get(
                       'https://api2.postnord.com/rest/shipment/v5/trackandtrace/findByIdentifier.json',

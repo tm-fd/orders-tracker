@@ -48,7 +48,6 @@ export default function DashboardPage() {
   const {
     purchases,
     purchaseStatuses,
-    setPurchaseStatus,
     fetchPurchaseStatusesByDateRange,
     setError,
     error,

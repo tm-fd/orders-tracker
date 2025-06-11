@@ -12,6 +12,7 @@ const steps = [
 ];
 
 export function PurchaseProgressSteps({ purchaseStatus }: PurchaseStatus) {
+  console.log(purchaseStatus)
   const getStepStatus = (step: string) => {
     switch (step) {
       case 'orderPlaced':

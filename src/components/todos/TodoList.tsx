@@ -41,8 +41,10 @@ import {
 import moment from "moment";
 import TodoForm from "./TodoForm";
 import TodoStats from "./TodoStats";
+import { useSession } from 'next-auth/react';
 
-const TodoList: React.FC = () => {
+const TodoList = () => {
+  const { data: session } = useSession();
   const {
     todos,
     loading,
@@ -79,10 +81,13 @@ const TodoList: React.FC = () => {
 
     await fetchTodos(query);
   };
+  useEffect(() => {
+    console.log(todos);
+  }, [todos]);
 
   const handleStatusChange = async (todo: Todo, newStatus: TodoStatus) => {
     try {
-      await updateTodo(todo.id, { status: newStatus });
+      await updateTodo(todo.id, { status: newStatus }, session.user.sessionToken);
     } catch (error) {
       console.error("Failed to update todo status:", error);
     }
@@ -91,7 +96,7 @@ const TodoList: React.FC = () => {
   const handleDeleteTodo = async (todoId: number) => {
     if (confirm("Are you sure you want to delete this todo?")) {
       try {
-        await deleteTodo(todoId);
+        await deleteTodo(todoId, session.user.sessionToken);
       } catch (error) {
         console.error("Failed to delete todo:", error);
       }
@@ -270,6 +275,7 @@ const TodoList: React.FC = () => {
                 <CardBody>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
+                      <div className="flex justify-between">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-semibold text-lg">{todo.title}</h3>
                         <Chip
@@ -291,6 +297,25 @@ const TodoList: React.FC = () => {
                             OVERDUE
                           </Chip>
                         )}
+                      </div>
+                      <div>
+                        <Chip
+                          color={"default"}
+                          size="sm"
+                          variant="flat"
+                        >
+                          <span>Created by</span> {todo.created_by_name}
+                        </Chip>
+                        {todo.assigned_to_name &&
+                        <Chip
+                          color={"default"}
+                          size="sm"
+                          variant="flat"
+                        >
+                          Assigned to {todo.assigned_to_name}
+                        </Chip>
+                        }
+                      </div>
                       </div>
 
                       {todo.description && (
@@ -381,7 +406,7 @@ const TodoList: React.FC = () => {
       {/* Todo Form Modal */}
       <Modal isOpen={isOpen} onClose={closeModal} size="2xl">
         <ModalContent>
-          <ModalHeader>
+          <ModalHeader className="!p-5">
             {selectedTodo ? "Edit Todo" : "Create New Todo"}
           </ModalHeader>
           <ModalBody>
