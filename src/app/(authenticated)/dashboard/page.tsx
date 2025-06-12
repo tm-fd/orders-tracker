@@ -17,6 +17,7 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Skeleton,
 } from "@heroui/react";
 import { use, useCallback, useEffect, useState } from "react";
 import {
@@ -32,7 +33,7 @@ import {
   Area,
 } from "recharts";
 import usePurchaseStore from "@/store/purchaseStore";
-import { DatePickerIcon } from "@/components/icons";
+import { DatePickerIcon, LoadingBars } from "@/components/icons";
 import { data } from "framer-motion/client";
 import type { RangeValue } from "@react-types/shared";
 import type { DateValue } from "@react-types/datepicker";
@@ -72,6 +73,7 @@ export default function DashboardPage() {
   const [isLoadingLast12Weeks, setIsLoadingLast12Weeks] = useState(false);
   const [datePrecision, setDatePrecision] = useState("exact_dates");
   const { theme, setTheme } = useTheme();
+  const [isLoadingValidUsers, setIsLoadingValidUsers] = useState(true);
 
   useEffect(() => {
     console.log(theme);
@@ -86,42 +88,16 @@ export default function DashboardPage() {
   }, [purchaseStatuses, isLoading]);
 
   useEffect(() => {
+    if (Object.keys(purchaseStatuses).length > 0) {
+      update12WeeksUserStatusCounts();
+    }
+  }, [purchaseStatuses, isLoadingLast12Weeks]);
+
+  useEffect(() => {
     handleDateRangeChange(dateRange);
   }, [dateRange]);
 
   const updateUserStatusCounts = async () => {
-    const statuses = await checkActiveAndTrainedLast12Weeks();
-    const validCountAndTraindLast12Weeks = Object.values(statuses).filter(
-      (status: any) => {
-        const activationAndTrainedRecently = status.activationRecords?.some(
-          (record) => {
-            if (
-              !record.user ||
-              !record.user.training_session_data?.length ||
-              !record.user.valid_until
-            )
-              return false;
-
-            const validUntilDate = moment(record.user.valid_until);
-            if (!validUntilDate.isAfter(moment())) return false;
-
-            const lastTrainingSession =
-              record.user.training_session_data[
-                record.user.training_session_data.length - 1
-              ];
-
-            if (!lastTrainingSession.start_time) return false;
-
-            const twelveWeeksAgo = moment().subtract(12, "weeks");
-            const sessionDate = moment(lastTrainingSession.start_time);
-            return sessionDate.isAfter(twelveWeeksAgo);
-          }
-        );
-
-        return activationAndTrainedRecently;
-      }
-    ).length;
-
     // Count users who have started training and are not invalid
     const activeTrainedCount =
       Object.values(purchaseStatuses).filter(isTrained).length;
@@ -133,15 +109,53 @@ export default function DashboardPage() {
       checkActiveNotTrainedStudents
     ).length;
 
-    // Count users who have started training and are not invalid
-    // const validCountAndTraindLast12Weeks = Object.values(purchaseStatuses).filter(
-    //   (status) => isActiveAndTraindLast12Weeks(status);
-    // ).length;
     setActiveUsersNotTrained(inactiveTrainedCount);
     setTrainedUsers(activeTrainedCount);
     setInvalidUsers(invalidCount);
-    setValidUsersAndTrainedlast12Weeks(validCountAndTraindLast12Weeks);
     setActiveNotTrainedStudents(activeNotTrainedStudentCount);
+  };
+
+  const update12WeeksUserStatusCounts = async () => {
+    setIsLoadingValidUsers(true);
+    try {
+      const statuses = await checkActiveAndTrainedLast12Weeks();
+      const validCountAndTraindLast12Weeks = Object.values(statuses).filter(
+        (status: any) => {
+          const activationAndTrainedRecently = status.activationRecords?.some(
+            (record) => {
+              if (
+                !record.user ||
+                !record.user.training_session_data?.length ||
+                !record.user.valid_until
+              )
+                return false;
+
+              const validUntilDate = moment(record.user.valid_until);
+              if (!validUntilDate.isAfter(moment())) return false;
+
+              const lastTrainingSession =
+                record.user.training_session_data[
+                  record.user.training_session_data.length - 1
+                ];
+
+              if (!lastTrainingSession.start_time) return false;
+
+              const twelveWeeksAgo = moment().subtract(12, "weeks");
+              const sessionDate = moment(lastTrainingSession.start_time);
+              return sessionDate.isAfter(twelveWeeksAgo);
+            }
+          );
+
+          return activationAndTrainedRecently;
+        }
+      ).length;
+
+      setValidUsersAndTrainedlast12Weeks(validCountAndTraindLast12Weeks);
+    } catch (error) {
+      console.error("Error updating user status counts:", error);
+    } finally {
+      setIsLoadingValidUsers(false);
+    }
   };
 
   const checkAccountValidity = (status: any) => {
@@ -193,37 +207,6 @@ export default function DashboardPage() {
     return activationButNotTrainedStudents;
   };
 
-  // const checkActiveAndTrainedLast12Weeks = (status: any) => {
-  //   const activationAndTrainedRecently = status.activationRecords?.some(
-  //     (record) => {
-
-  //       // Check if user exists, has training data, and has valid_until date
-  //       if (
-  //         !record.user ||
-  //         !record.user.training_session_data?.length ||
-  //         !record.user.valid_until
-  //       ) return false;
-
-  //       // Check if valid_until is in the future
-  //       const validUntilDate = moment(record.user.valid_until);
-  //       if (!validUntilDate.isAfter(moment())) return false;
-
-  //       // Get the last training session
-  //       const lastTrainingSession =
-  //         record.user.training_session_data[
-  //           record.user.training_session_data.length - 1
-  //         ];
-
-  //       // Check if start_time exists and is within last 12 weeks
-  //       if (!lastTrainingSession.start_time) return false;
-
-  //       const twelveWeeksAgo = moment().subtract(12, "weeks");
-  //       const sessionDate = moment(lastTrainingSession.start_time);
-  //       return sessionDate.isAfter(twelveWeeksAgo);
-  //     }
-  //   );
-  //   return activationAndTrainedRecently;
-  // };
   const checkActiveAndTrainedLast12Weeks = useCallback(async () => {
     try {
       if (Object.keys(last12WeeksStatuses).length === 0) {
@@ -351,40 +334,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen w-full p-8 space-y-6">
       <h1 className="text-2xl font-bold">Dashboard</h1>
-      {/* <DateRangePicker
-        CalendarBottomContent={
-          <RadioGroup
-            aria-label="Date precision"
-            classNames={{
-              base: "w-full pb-2",
-              wrapper:
-                "-my-2.5 py-2.5 px-3 gap-1 flex-nowrap max-w-[w-[calc(var(--visible-months)_*_var(--calendar-width))]] overflow-scroll",
-            }}
-            defaultValue="exact_dates"
-            orientation="horizontal"
-            value={datePrecision}
-            onValueChange={handlePrecisionChange}
-          >
-            <CustomRadio value="7_days">7 days</CustomRadio>
-            <CustomRadio value="14_days">14 days</CustomRadio>
-            <CustomRadio value="month">1 month</CustomRadio>
-            <CustomRadio value="3_month">3 months</CustomRadio>
-            <CustomRadio value="6_month">6 months</CustomRadio>
-            <CustomRadio value="year">1 year</CustomRadio>
-          </RadioGroup>
-        }
-        aria-label="Date range"
-        DatePickerIcon={"Date range"}
-        pageBehavior="single"
-        value={dateRange}
-        onChange={setDateRange}
-        selectorIcon={<DatePickerIcon className="text-xl" />}
-        visibleMonths={2}
-        // calendarProps={{
-        //   focusedValue: dateRange?.end,
-        // }}
-        // showMonthAndYearPickers
-      /> */}
       <div className="flex items-center gap-2 w-full max-w-md relative">
         <Flatpickr
           options={{
@@ -473,7 +422,7 @@ export default function DashboardPage() {
       </div>
       <Modal
         backdrop="blur"
-        isOpen={isLoading || isLoadingLast12Weeks}
+        isOpen={isLoading || (isLoadingLast12Weeks && !isLoadingValidUsers)}
         placement="top-center"
         classNames={{
           closeButton: "hidden",
@@ -507,9 +456,14 @@ export default function DashboardPage() {
             </small>
           </CardHeader>
           <CardBody className="py-4 justify-end">
-            <h1 className="text-4xl font-bold">
-              {validUsersAndTrainedlast12Weeks}
-            </h1>
+            <Skeleton
+              className="w-2/5 rounded-lg"
+              isLoaded={!isLoadingValidUsers}
+            >
+              <h1 className="text-4xl font-bold">
+                {validUsersAndTrainedlast12Weeks}
+              </h1>
+            </Skeleton>
           </CardBody>
         </Card>
 

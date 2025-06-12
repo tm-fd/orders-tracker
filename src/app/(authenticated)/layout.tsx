@@ -18,7 +18,7 @@ export default async function ProtectedLayout({
 
   return (
     <div className="flex min-h-screen py-9 bg-background">
-      <Sidebar />
+      <Sidebar user={session.user} />
       <ClientLayoutWrapper>
         <div className="flex flex-col flex-1">
           <NavigationBar user={session.user} />
