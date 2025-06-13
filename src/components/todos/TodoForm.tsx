@@ -25,7 +25,7 @@ import {
   getLocalTimeZone,
 } from "@internationalized/date";
 import moment from "moment";
-import { useSession } from 'next-auth/react';
+import { useSession } from "next-auth/react";
 
 interface TodoFormProps {
   todo?: Todo | null;
@@ -68,7 +68,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
 
   useEffect(() => {
     if (formData.due_date && formData.reminder_time) {
-      const dueDate = moment(formData.due_date).endOf('day');
+      const dueDate = moment(formData.due_date).endOf("day");
       const reminderDate = moment(formData.reminder_time);
 
       if (reminderDate.isSameOrBefore(dueDate)) {
@@ -82,24 +82,24 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
   }, [formData.due_date, formData.reminder_time]);
 
   const validateForm = () => {
-  const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
 
-  if (!formData.title.trim()) {
-    newErrors.title = "Title is required";
-  }
-
-  if (formData.due_date && formData.reminder_time) {
-    const dueDate = moment(formData.due_date).endOf('day'); // Use end of day for due date
-    const reminderDate = moment(formData.reminder_time);
-
-    if (reminderDate.isAfter(dueDate)) {
-      newErrors.reminder_time = "Reminder time cannot be after due date";
+    if (!formData.title.trim()) {
+      newErrors.title = "Title is required";
     }
-  }
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    if (formData.due_date && formData.reminder_time) {
+      const dueDate = moment(formData.due_date).endOf("day"); // Use end of day for due date
+      const reminderDate = moment(formData.reminder_time);
+
+      if (reminderDate.isAfter(dueDate)) {
+        newErrors.reminder_time = "Reminder time cannot be after due date";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,14 +107,15 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
     if (!validateForm()) {
       return;
     }
-
+const localTime = moment(formData.reminder_time);
+const utcTime = localTime.utc().format();
     try {
       const todoData: CreateTodoDto | UpdateTodoDto = {
         title: formData.title.trim(),
         description: formData.description.trim() || undefined,
         priority: formData.priority,
         due_date: formData.due_date || undefined,
-        reminder_time: formData.reminder_time || undefined,
+        reminder_time: utcTime || undefined,
         tags: formData.tags.length > 0 ? formData.tags : undefined,
       };
 
@@ -122,9 +123,9 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
         await updateTodo(todo.id, todoData, session.user.sessionToken);
       } else {
         await createTodo({
-        ...todoData,
-        userId: session.user.sessionToken
-      });
+          ...todoData,
+          userId: session.user.sessionToken,
+        });
       }
 
       onSuccess();
