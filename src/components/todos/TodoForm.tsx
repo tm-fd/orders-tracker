@@ -59,8 +59,8 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
           ? moment(todo.due_date).format("YYYY-MM-DD")
           : "",
         reminder_time: todo.reminder_time
-          ? moment(todo.reminder_time).format("YYYY-MM-DDTHH:mm")
-          : "",
+        ? moment(todo.reminder_time).local().format("YYYY-MM-DDTHH:mm")
+        : "",
         tags: todo.tags || [],
       });
     }
@@ -114,7 +114,9 @@ const TodoForm: React.FC<TodoFormProps> = ({ todo, onSuccess, onCancel }) => {
         description: formData.description.trim() || undefined,
         priority: formData.priority,
         due_date: formData.due_date || undefined,
-        reminder_time: formData.reminder_time || undefined,
+        reminder_time: formData.reminder_time 
+        ? moment(formData.reminder_time).utc().format()
+        : undefined,
         tags: formData.tags.length > 0 ? formData.tags : undefined,
       };
 
