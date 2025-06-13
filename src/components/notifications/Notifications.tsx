@@ -44,7 +44,7 @@ const Notifications = () => {
       (notification) => notification.type === NotificationType.SHIPPING_MISSING
     );
   }, [notifications]);
-  console.log(shippingNotifications);
+  
   const todoReminders = useMemo(() => {
     return notifications.filter(
       (notification) => notification.type === NotificationType.TODO_REMINDER

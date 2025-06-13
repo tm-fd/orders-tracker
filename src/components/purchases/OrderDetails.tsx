@@ -33,7 +33,6 @@ export default function OrderDetails({ purchase, oldPurchases }: OrderDetailsPro
     additionalInfos,
     error: additionalInfoError,
   } = useAdditionalInfo(purchase.id);
-
   const {
     orderStatus,
     orderEmail,
@@ -44,7 +43,40 @@ export default function OrderDetails({ purchase, oldPurchases }: OrderDetailsPro
     hasOrderStatus_email,
     isInvalidAccount,
     multipleActivations,
-  } = purchaseStatus
+  } = purchaseStatus;
+
+  const getCountryName = (countryCode: string) => {
+  const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+  try {
+    return regionNames.of(countryCode) || countryCode;
+  } catch (error) {
+    return countryCode;
+  }
+};
+
+const getCurrencyByCountry = (countryCode: string): string => {
+  const currencyMap: { [key: string]: string } = {
+    'SE': 'SEK',
+    'NO': 'NOK',
+    'DK': 'DKK',
+    'FI': 'EUR',
+    'US': 'USD',
+    'GB': 'GBP',
+  };
+  return currencyMap[countryCode] || 'SEK'; // Default to SEK if country not found
+};
+
+const formatCurrency = (amount: string, countryCode: string): string => {
+  const currency = getCurrencyByCountry(countryCode);
+  const numAmount = parseFloat(amount);
+  
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numAmount);
+};
   
   if (!purchaseStatus) {
     return (
@@ -76,6 +108,20 @@ export default function OrderDetails({ purchase, oldPurchases }: OrderDetailsPro
               ))}
             </div>
           )
+        )}
+
+        {additionalInfos.length > 0 && additionalInfos[0].address_line && (
+          <div className="flex flex-col items-start justify-center mb-4">
+            <h4 className="text-lg font-semibold mb-2">Address:</h4>
+            <p className="text-sm">
+              {additionalInfos[0].address_line}, {additionalInfos[0].city},{' '}
+              {additionalInfos[0].state}, {additionalInfos[0].postal_code},{' '}
+              {getCountryName(additionalInfos[0].country)}
+            </p>
+            <p className="text-sm">
+              Amount: {formatCurrency(additionalInfos[0].order_amount, additionalInfos[0].country)}
+            </p>
+          </div>
         )}
 
         {/* Order Status Section */}
