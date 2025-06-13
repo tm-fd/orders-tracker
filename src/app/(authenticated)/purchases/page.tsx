@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
-import PurchaseTable from '@/components/PurchaseTable';
+import PurchaseTable from '@/components/purchases/PurchaseTable';
 import { ZPurchase } from '@/store/purchaseStore';
 import { Button, Spinner } from "@heroui/react";
 import usePurchaseStore from '@/store/purchaseStore';

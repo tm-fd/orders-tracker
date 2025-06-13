@@ -5,7 +5,8 @@ import axios from 'axios';
 export enum NotificationType {
   SHIPPING_MISSING = 'SHIPPING_MISSING',
   PURCHASE_STATUS = 'PURCHASE_STATUS',
-  TRAINING_REMINDER = 'TRAINING_REMINDER'
+  TRAINING_REMINDER = 'TRAINING_REMINDER',
+  TODO_REMINDER = 'TODO_REMINDER'
 }
 
 interface MetadataDto {
@@ -50,6 +51,9 @@ interface NotificationStore {
   markAllAsRead: () => Promise<void>;
   getCount: () => Promise<void>;
   updateCounts: (counts: NotificationCountDto) => void;
+  addNotification: (notification: NotificationResponseDto) => void;
+  updateNotification: (notification: NotificationResponseDto) => void;
+  removeNotification: (notificationId: number) => void;
 }
 
 export const useNotificationStore = create<NotificationStore>()(
@@ -60,6 +64,54 @@ export const useNotificationStore = create<NotificationStore>()(
       error: null,
       counts: { total: 0, unread: 0 },
 
+      // Add new notification in real-time
+      addNotification: (notification: NotificationResponseDto) => {
+        set((state) => ({
+          notifications: [notification, ...state.notifications],
+          counts: {
+            total: state.counts.total + 1,
+            unread: state.counts.unread + (notification.read ? 0 : 1)
+          }
+        }));
+      },
+
+      // Update existing notification in real-time
+      updateNotification: (updatedNotification: NotificationResponseDto) => {
+        set((state) => {
+          const updatedNotifications = state.notifications.map(notification =>
+            notification.id === updatedNotification.id ? updatedNotification : notification
+          );
+
+          // Recalculate unread count
+          const unreadCount = updatedNotifications.filter(n => !n.read).length;
+
+          return {
+            notifications: updatedNotifications,
+            counts: {
+              total: state.counts.total,
+              unread: unreadCount
+            }
+          };
+        });
+      },
+
+      // Remove notification in real-time
+      removeNotification: (notificationId: number) => {
+        set((state) => {
+          const notification = state.notifications.find(n => n.id === notificationId);
+          const updatedNotifications = state.notifications.filter(n => n.id !== notificationId);
+
+          return {
+            notifications: updatedNotifications,
+            counts: {
+              total: state.counts.total - 1,
+              unread: state.counts.unread - (notification && !notification.read ? 1 : 0)
+            }
+          };
+        });
+      },
+
+      // Modified existing methods to work with real-time updates
       fetchNotifications: async (query?: NotificationQueryDto) => {
         try {
           set({ loading: true, error: null });
@@ -67,8 +119,14 @@ export const useNotificationStore = create<NotificationStore>()(
             `${process.env.CLOUDRUN_DEV_URL}/purchases/notifications`,
             { params: query }
           );
-          console.log(response.data)
-          set({ notifications: response.data, loading: false });
+          set({ 
+            notifications: response.data,
+            loading: false,
+            counts: {
+              total: response.data.length,
+              unread: response.data.filter((n: NotificationResponseDto) => !n.read).length
+            }
+          });
         } catch (error) {
           set({ error: 'Failed to fetch notifications', loading: false });
         }
@@ -76,32 +134,45 @@ export const useNotificationStore = create<NotificationStore>()(
 
       markAsRead: async (notificationId: string, read: boolean) => {
         try {
+          // Optimistic update
+          get().updateNotification({
+            ...get().notifications.find(n => n.id === Number(notificationId))!,
+            read
+          });
+
           const response = await axios.patch(
             `${process.env.CLOUDRUN_DEV_URL}/purchases/notifications/${notificationId}/read`,
             { read }
           );
-          set((state) => ({
-            notifications: state.notifications.map((n) =>
-              n.id === notificationId ? response.data : n
-            ),
-          }));
-          await get().getCount();
+
+          // Update with server response
+          get().updateNotification(response.data);
         } catch (error) {
           console.error('Failed to mark notification as read:', error);
+          // Revert optimistic update on error
+          await get().fetchNotifications();
         }
       },
 
       markAllAsRead: async () => {
         try {
+          // Optimistic update
+          set((state) => ({
+            notifications: state.notifications.map(n => ({ ...n, read: true })),
+            counts: { ...state.counts, unread: 0 }
+          }));
+
           const response = await axios.patch(
             `${process.env.CLOUDRUN_DEV_URL}/purchases/notifications/mark-all-read`
           );
-          set((state) => ({
-            notifications: response.data,
-          }));
+
+          // Update with server response
+          set({ notifications: response.data });
           await get().getCount();
         } catch (error) {
           console.error('Failed to mark all as read:', error);
+          // Revert optimistic update on error
+          await get().fetchNotifications();
         }
       },
 

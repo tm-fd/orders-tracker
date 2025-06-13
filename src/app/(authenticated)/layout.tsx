@@ -1,9 +1,9 @@
 // src/app/(authenticated)/layout.tsx
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import Sidebar from '@/components/Sidebar';
-import NavigationBar from '@/components/NavigationBar';
-import { ClientLayoutWrapper } from '@/components/ClientLayoutWrapper';
+import Sidebar from '@/components/navigation/Sidebar';
+import NavigationBar from '@/components/notifications/NavigationBar';
+import { ClientLayoutWrapper } from '@/components/navigation/ClientLayoutWrapper';
 
 export default async function ProtectedLayout({
   children,
@@ -18,7 +18,7 @@ export default async function ProtectedLayout({
 
   return (
     <div className="flex min-h-screen py-9 bg-background">
-      <Sidebar />
+      <Sidebar user={session.user} />
       <ClientLayoutWrapper>
         <div className="flex flex-col flex-1">
           <NavigationBar user={session.user} />

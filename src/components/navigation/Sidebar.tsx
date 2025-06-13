@@ -1,8 +1,9 @@
 "use client";
 
+
+import { useEffect } from "react";
 import { useSidebarStore } from "@/store/sidebar";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import {
   LayoutDashboard,
   Users,
@@ -11,6 +12,7 @@ import {
   Bell,
   FileText,
   Menu,
+  CheckSquare,
 } from "lucide-react";
 import {
   Navbar,
@@ -22,12 +24,12 @@ import {
 import Image from "next/image";
 
 
-const Sidebar = () => {
+const Sidebar = ({ user }) => {
   const isOpen = useSidebarStore((state) => state.isOpen);
   const toggle = useSidebarStore((state) => state.toggle);
   const pathname = usePathname();
-  const { data: session } = useSession();
-console.log(session);
+
+
   const navigationItems = [
     {
       name: "Dashboard",
@@ -39,7 +41,12 @@ console.log(session);
       href: "/purchases",
       icon: ShoppingCart,
     },
-    ...(session?.user?.role === "ADMIN" ? [
+    {
+        name: "Todos",
+        href: "/todos",
+        icon: CheckSquare,
+      },
+    ...(user?.role === "ADMIN" ? [
       {
         name: "Logs",
         href: "/logs",
