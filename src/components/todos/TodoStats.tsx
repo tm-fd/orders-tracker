@@ -13,12 +13,14 @@ import { useTodoStore } from "@/store/todoStore";
 import { useSession } from 'next-auth/react';
 
 const TodoStats = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { stats, getStats } = useTodoStore();
 
   useEffect(() => {
-    getStats(session.user.sessionToken);
-  }, []);
+    if (status === 'authenticated' && session?.user?.sessionToken) {
+      getStats(session.user.sessionToken);
+    }
+  }, [session, status, getStats]);
 
   const statCards = [
     // {
@@ -67,7 +69,6 @@ const TodoStats = () => {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {statCards.map((stat, index) => {
         const IconComponent = stat.icon;
-
         return (
           <Card key={index} className={`${stat.bgColor} border-none`}>
             <CardBody className="p-4">

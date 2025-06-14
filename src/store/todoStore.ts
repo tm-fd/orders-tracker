@@ -255,12 +255,13 @@ export const useTodoStore = create<TodoStore>()(
           const response = await axios.get(
             `${process.env.CLOUDRUN_DEV_URL}/todos/stats`,
             {
-              params: { user_id: userId },
+              params: { userId },
               headers: {
                 'Authorization': `Bearer ${userId}`
               }
             }
           );
+
           set({ stats: response.data });
         } catch (error: any) {
           console.error('Failed to get todo stats:', error);
