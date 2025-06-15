@@ -41,7 +41,7 @@ import {
 import moment from "moment";
 import TodoForm from "./TodoForm";
 import TodoStats from "./TodoStats";
-import { useSession } from 'next-auth/react';
+import { useSession } from "next-auth/react";
 
 const TodoList = () => {
   const { data: session } = useSession();
@@ -61,10 +61,19 @@ const TodoList = () => {
   const [statusFilter, setStatusFilter] = useState<TodoStatus | "">("");
   const [priorityFilter, setPriorityFilter] = useState<TodoPriority | "">("");
   const [showOverdueOnly, setShowOverdueOnly] = useState(false);
+  const [dueDateFilter, setDueDateFilter] = useState<
+    "today" | "week" | "all" | ""
+  >("");
 
   useEffect(() => {
     loadTodos();
-  }, [searchTerm, statusFilter, priorityFilter, showOverdueOnly]);
+  }, [
+    searchTerm,
+    statusFilter,
+    priorityFilter,
+    showOverdueOnly,
+    dueDateFilter,
+  ]);
 
   const loadTodos = async () => {
     const query: TodoQueryDto = {
@@ -79,6 +88,28 @@ const TodoList = () => {
     if (priorityFilter) query.priority = priorityFilter;
     if (showOverdueOnly) query.overdue_only = "true";
 
+    // Add due date filtering
+    if (dueDateFilter) {
+      const now = moment();
+      switch (dueDateFilter) {
+        case "today":
+          query.due_after = now.startOf("day").toISOString();
+          query.due_before = now.endOf("day").toISOString();
+          break;
+        case "week":
+          query.due_after = now.startOf("week").toISOString();
+          query.due_before = now.endOf("week").toISOString();
+          break;
+        case "last_week":
+          const startOfLastWeek = now.clone().subtract(1, 'week').startOf('week');
+        const endOfLastWeek = now.clone().subtract(1, 'week').endOf('week');
+        query.due_after = startOfLastWeek.toISOString();
+        query.due_before = endOfLastWeek.toISOString();
+          break;
+        // 'all' case doesn't need any filters
+      }
+    }
+
     await fetchTodos(query);
   };
   useEffect(() => {
@@ -87,7 +118,11 @@ const TodoList = () => {
 
   const handleStatusChange = async (todo: Todo, newStatus: TodoStatus) => {
     try {
-      await updateTodo(todo.id, { status: newStatus }, session.user.sessionToken);
+      await updateTodo(
+        todo.id,
+        { status: newStatus },
+        session.user.sessionToken
+      );
     } catch (error) {
       console.error("Failed to update todo status:", error);
     }
@@ -209,7 +244,7 @@ const TodoList = () => {
               placeholder="Filter by status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as TodoStatus)}
-              className="max-w-xs"
+              className="w-40"
             >
               <SelectItem key="" value="">
                 All Statuses
@@ -227,7 +262,7 @@ const TodoList = () => {
               onChange={(e) =>
                 setPriorityFilter(e.target.value as TodoPriority)
               }
-              className="max-w-xs"
+              className="w-40"
             >
               <SelectItem key="" value="">
                 All Priorities
@@ -237,6 +272,30 @@ const TodoList = () => {
                   {priority}
                 </SelectItem>
               ))}
+            </Select>
+
+            <Select
+              placeholder="Filter by due date"
+              value={dueDateFilter}
+              onChange={(e) =>
+                setDueDateFilter(
+                  e.target.value as "today" | "week" | "last_week" | "all" | ""
+                )
+              }
+              className="w-40"
+            >
+              <SelectItem key="" value="">
+                All Due Dates
+              </SelectItem>
+              <SelectItem key="today" value="today">
+                Due Today
+              </SelectItem>
+              <SelectItem key="week" value="week">
+                Due This Week
+              </SelectItem>
+              <SelectItem key="last_week" value="last_week">
+                Due Last Week
+              </SelectItem>
             </Select>
 
             <Button
@@ -276,46 +335,40 @@ const TodoList = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex justify-between">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{todo.title}</h3>
-                        <Chip
-                          color={getPriorityColor(todo.priority)}
-                          size="sm"
-                          variant="flat"
-                        >
-                          {todo.priority}
-                        </Chip>
-                        <Chip
-                          color={getStatusColor(todo.status)}
-                          size="sm"
-                          variant="flat"
-                        >
-                          {todo.status.replace("_", " ")}
-                        </Chip>
-                        {isOverdue(todo) && (
-                          <Chip color="danger" size="sm" variant="flat">
-                            OVERDUE
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg">
+                            {todo.title}
+                          </h3>
+                          <Chip
+                            color={getPriorityColor(todo.priority)}
+                            size="sm"
+                            variant="flat"
+                          >
+                            {todo.priority}
                           </Chip>
-                        )}
-                      </div>
-                      <div>
-                        <Chip
-                          color={"default"}
-                          size="sm"
-                          variant="flat"
-                        >
-                          <span>Created by</span> {todo.created_by_name}
-                        </Chip>
-                        {todo.assigned_to_name &&
-                        <Chip
-                          color={"default"}
-                          size="sm"
-                          variant="flat"
-                        >
-                          Assigned to {todo.assigned_to_name}
-                        </Chip>
-                        }
-                      </div>
+                          <Chip
+                            color={getStatusColor(todo.status)}
+                            size="sm"
+                            variant="flat"
+                          >
+                            {todo.status.replace("_", " ")}
+                          </Chip>
+                          {isOverdue(todo) && (
+                            <Chip color="danger" size="sm" variant="flat">
+                              OVERDUE
+                            </Chip>
+                          )}
+                        </div>
+                        <div>
+                          <Chip color={"default"} size="sm" variant="flat">
+                            <span>Created by</span> {todo.created_by_name}
+                          </Chip>
+                          {todo.assigned_to_name && (
+                            <Chip color={"default"} size="sm" variant="flat">
+                              Assigned to {todo.assigned_to_name}
+                            </Chip>
+                          )}
+                        </div>
                       </div>
 
                       {todo.description && (
@@ -337,7 +390,9 @@ const TodoList = () => {
                             <Clock className="w-4 h-4" />
                             <span>
                               Reminder:{" "}
-                              {moment(todo.reminder_time).format("MMM DD, YYYY HH:mm")}
+                              {moment(todo.reminder_time).format(
+                                "MMM DD, YYYY HH:mm"
+                              )}
                             </span>
                           </div>
                         )}

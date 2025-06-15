@@ -70,6 +70,8 @@ export interface TodoQueryDto {
   overdue_only?: string;
   sort_by?: string;
   sort_order?: string;
+  due_after?: string;
+  due_before?: string;
 }
 
 export interface TodoStats {
