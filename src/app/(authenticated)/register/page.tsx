@@ -37,7 +37,8 @@ export default function Register() {
     { label: 'User', value: 'USER' },
     { label: 'Subadmin', value: 'SUBADMIN' },
     { label: 'Teacher', value: 'TEACHER' },
-    { label: 'Editor', value: 'EDITOR' },
+    { label: 'Developer', value: 'DEVELOPER' },
+    { label: 'Marketing', value: 'MARKETING' },
   ];
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -60,7 +61,7 @@ export default function Register() {
           'string.email': `Email must be valid`,
           'string.required': `Email is required`,
         }),
-      role: Joi.string().required().valid('ADMIN', 'USER', 'SUBADMIN', 'TEACHER', 'EDITOR').messages({
+      role: Joi.string().required().valid('ADMIN', 'USER', 'SUBADMIN', 'TEACHER', 'MARKETING', 'DEVELOPER').messages({
         'string.empty': `Role is required`,
         'any.only': 'Please select a valid role',
       }),
