@@ -110,7 +110,7 @@ const TodoList = () => {
       }
     }
 
-    await fetchTodos(query);
+    await fetchTodos(query, session.user.sessionToken);
   };
   useEffect(() => {
     console.log(todos);
