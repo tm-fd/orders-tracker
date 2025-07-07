@@ -131,7 +131,7 @@ export default function LogViewer() {
 
       {/* Table */}
       <div className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-        <div className="p-6 overflow-x-auto bg-paperBgLight dark:bg-paperBgDark">
+        <div className="overflow-x-auto bg-paperBgLight dark:bg-paperBgDark">
           {loading ? (
             <div className="flex justify-center py-12">
               <Spinner size="lg" />
@@ -139,7 +139,7 @@ export default function LogViewer() {
           ) : (
             <table className="min-w-full table-auto border-separate border-spacing-y-4">
               <thead className="bg-headerBgLight text-headerTextLight dark:bg-headerBgDark dark:text-headerTextDark">
-                <tr>
+                <tr className="text-sm">
                   <th className="w-12 p-3 rounded-tl-2xl rounded-bl-2xl"></th>
                   <th className="p-3 text-left">Timestamp</th>
                   <th className="p-3 text-left">Level</th>
@@ -159,20 +159,20 @@ export default function LogViewer() {
                       <tr
                         onClick={() => toggle(rowId)}
                         className={`
-                          cursor-pointer hover:bg-gray-700
+                          cursor-pointer hover:bg-gray-700 text-xs
                           ${isOpen ? "bg-gray-700" : ""}
                           ${idx % 2 === 1 ? "bg-gray-800" : ""}
                         `}
                       >
-                        <td className="p-3 text-center">
+                        <td className="text-center">
                           {isOpen ? "–" : "+"}
                         </td>
-                        <td className="p-3">
+                        <td className="">
                           {new Date(log["@timestamp"]).toLocaleString()}
                         </td>
-                        <td className="p-3">{log.level}</td>
-                        <td className="p-3">{log.message}</td>
-                        <td className="p-3">{log.key}</td>
+                        <td className="">{log.level}</td>
+                        <td className="">{log.message}</td>
+                        <td className="">{log.key}</td>
                       </tr>
 
                       {isOpen && (
