@@ -30,6 +30,12 @@ export interface PurchaseObj {
   numberOfLicenses: number;
   isSubscription: boolean;
   duration: number;
+  additionalInfo?: {
+    info?: string;
+    purchase_source?: string;
+    shipped?: boolean;
+    is_hidden?: boolean;
+  }[];
 }
 
 interface PurchaseStatus {
