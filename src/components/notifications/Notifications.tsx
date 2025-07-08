@@ -161,7 +161,6 @@ const Notifications = () => {
     if (notification.type === NotificationType.SHIPPING_MISSING) {
       // For shipping notifications, apply filter first then navigate
       if (notification.metadata?.purchaseIds?.length > 0) {
-        console.log('Setting purchase filters:', notification.metadata.purchaseIds);
         setActiveFilters({
           purchaseIds: notification.metadata.purchaseIds,
           missingShipping: true,
@@ -172,7 +171,6 @@ const Notifications = () => {
     } else if (notification.type === NotificationType.TODO_REMINDER) {
       // For todo reminders, apply filter first then navigate
       if (notification.metadata?.todoIds?.length > 0) {
-        console.log('Setting todo filters:', notification.metadata.todoIds);
         setTodoActiveFilters({
           todoIds: notification.metadata.todoIds,
         });
