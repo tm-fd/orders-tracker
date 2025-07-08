@@ -277,8 +277,36 @@ export default function PurchaseTable() {
       (activeFilters.purchaseIds != null &&
         activeFilters.purchaseIds.length > 0);
 
+    const hasNotificationFilters =
+      activeFilters.missingShipping ||
+      (activeFilters.purchaseIds != null &&
+        activeFilters.purchaseIds.length > 0);
+
     return (
       <div className="flex flex-col gap-4">
+        {/* Show notification filter indicator */}
+        {hasNotificationFilters && (
+          <div className="flex items-center justify-between p-3 bg-primary-50 border border-primary-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-primary-700">
+                Showing purchases from notification
+              </span>
+              {activeFilters.purchaseIds && (
+                <span className="text-xs text-primary-600">
+                  ({activeFilters.purchaseIds.length} selected)
+                </span>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="light"
+              color="primary"
+              onPress={clearActiveFilters}
+            >
+              Clear Filter
+            </Button>
+          </div>
+        )}
         <div className="flex flex-row items-end gap-3">
           <div className="flex w-1/3">
             <Input
@@ -409,8 +437,13 @@ export default function PurchaseTable() {
             <TableColumn
               key={column.key}
               {...(column.key === "date" ? { allowsSorting: true } : {})}
+              className={column.key === "date" ? "flex justify-start items-center" : ""}
             >
-              <div className="flex items-center gap-2">
+              <div
+                className={`flex items-center 
+                  ${column.key === "actions" ? "justify-end" : "justify-start"}
+                  gap-2`}
+              >
                 {column.label}
                 {column.key === "actions" && (
                   <Tooltip

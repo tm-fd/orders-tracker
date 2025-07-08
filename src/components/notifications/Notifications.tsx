@@ -20,12 +20,16 @@ import {
   NotificationType,
 } from "@/store/notificationStore";
 import usePurchaseStore from "@/store/purchaseStore";
+import { useTodoStore } from "@/store/todoStore";
+import { useRouter } from "next/navigation";
 
 const Notifications = () => {
   const socketRef = useRef<Socket | null>(null);
   const [selectedTab, setSelectedTab] = useState("notifications");
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { setActiveFilters } = usePurchaseStore();
+  const { setActiveFilters: setTodoActiveFilters } = useTodoStore();
+  const router = useRouter();
   const {
     notifications,
     loading,
@@ -144,15 +148,36 @@ const Notifications = () => {
   }, [setupSocketHandlers, fetchNotifications, getCount]);
 
   const handleNotificationClick = async (notification) => {
+    console.log('Notification clicked:', notification);
+    
     if (!notification.read) {
       await markAsRead(notification.id, true);
     }
 
-    if (notification.metadata?.purchaseIds?.length > 0) {
-      setActiveFilters({
-        purchaseIds: notification.metadata.purchaseIds,
-        missingShipping: true,
-      });
+    // Close the drawer immediately for better UX
+    onOpenChange(false);
+
+    // Handle different notification types
+    if (notification.type === NotificationType.SHIPPING_MISSING) {
+      // For shipping notifications, apply filter first then navigate
+      if (notification.metadata?.purchaseIds?.length > 0) {
+        console.log('Setting purchase filters:', notification.metadata.purchaseIds);
+        setActiveFilters({
+          purchaseIds: notification.metadata.purchaseIds,
+          missingShipping: true,
+        });
+      }
+      // Navigate to purchases page
+      router.push('/purchases');
+    } else if (notification.type === NotificationType.TODO_REMINDER) {
+      // For todo reminders, apply filter first then navigate
+      if (notification.metadata?.todoIds?.length > 0) {
+        console.log('Setting todo filters:', notification.metadata.todoIds);
+        setTodoActiveFilters({
+          todoIds: notification.metadata.todoIds,
+        });
+      }
+      router.push('/todos');
     }
   };
   const handleTabChange = (key) => {
