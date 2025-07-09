@@ -109,6 +109,8 @@ interface AdditionalInfo {
   id: number;
   purchase_id: number;
   info: string;
+  is_hidden?: boolean;
+  shipped?: boolean;
 }
 
 export const useAdditionalInfo = (purchaseId: number) => {
@@ -142,11 +144,12 @@ export const useAdditionalInfo = (purchaseId: number) => {
   }, [purchaseId]);
   
 
-  const editAdditionalInfo = (id: number, newInfo: string, isHidden?: boolean) => {
+  const editAdditionalInfo = (id: number, newInfo: string, isHidden?: boolean, shipped?: boolean) => {
     setEditedAdditionalInfos({
       id,
       info: newInfo,
       ...(isHidden !== undefined && { is_hidden: isHidden }),
+      ...(shipped !== undefined && { shipped: shipped }),
     });
     setAdditionalInfos((prev) =>
       prev.map((info) =>
@@ -155,6 +158,7 @@ export const useAdditionalInfo = (purchaseId: number) => {
               ...info,
               info: newInfo,
               ...(isHidden !== undefined && { is_hidden: isHidden }),
+              ...(shipped !== undefined && { shipped: shipped }),
             }
           : info
       )
@@ -172,6 +176,7 @@ export const useAdditionalInfo = (purchaseId: number) => {
         {
           info: editedAdditionalInfos.info,
           is_hidden: editedAdditionalInfos.is_hidden,
+          shipped: editedAdditionalInfos.shipped,
         },
         {
           headers: {

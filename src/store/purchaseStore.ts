@@ -30,6 +30,12 @@ export interface PurchaseObj {
   numberOfLicenses: number;
   isSubscription: boolean;
   duration: number;
+  additionalInfo?: {
+    info?: string;
+    purchase_source?: string;
+    shipped?: boolean;
+    is_hidden?: boolean;
+  }[];
 }
 
 interface PurchaseStatus {
@@ -69,6 +75,8 @@ interface Actions {
   setActiveFilters: (filters: { missingShipping?: boolean; purchaseIds?: number[] }) => void;
   clearActiveFilters: () => void;
   reset: () => void;
+  hasCachedData: () => boolean;
+  refreshPurchases: () => void;
 }
 
 const initialState: State = {
@@ -140,12 +148,17 @@ const usePurchaseStore = create<State & Actions>()(
         }
       })),
       reset: () => set(initialState),
+      hasCachedData: () => {
+        const state = get();
+        return state.purchases.length > 0;
+      },
     }),
     {
       name: 'purchase-storage',
       partialize: (state) => ({
         purchases: state.purchases,
         purchaseStatuses: state.purchaseStatuses,
+        activeFilters: state.activeFilters,
       }),
     }
 );

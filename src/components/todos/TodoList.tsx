@@ -49,10 +49,12 @@ const TodoList = () => {
     todos,
     loading,
     error,
+    activeFilters,
     fetchTodos,
     updateTodo,
     deleteTodo,
     clearError,
+    clearActiveFilters,
   } = useTodoStore();
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -317,6 +319,27 @@ const TodoList = () => {
         </div>
       ) : (
         <div className="space-y-4">
+          {/* Show active filter indicator */}
+          {activeFilters.todoIds && activeFilters.todoIds.length > 0 && (
+            <Card className="border-primary">
+              <CardBody className="py-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-primary">
+                    Showing todos from notification ({activeFilters.todoIds.length} selected)
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    onPress={clearActiveFilters}
+                  >
+                    Clear Filter
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          )}
+          
           {todos.length === 0 ? (
             <Card>
               <CardBody className="text-center py-8">
@@ -324,7 +347,15 @@ const TodoList = () => {
               </CardBody>
             </Card>
           ) : (
-            todos.map((todo) => (
+            todos
+              .filter((todo) => {
+                // Apply notification-based filters
+                if (activeFilters.todoIds && activeFilters.todoIds.length > 0) {
+                  return activeFilters.todoIds.includes(todo.id);
+                }
+                return true;
+              })
+              .map((todo) => (
               <Card
                 key={todo.id}
                 className={`${

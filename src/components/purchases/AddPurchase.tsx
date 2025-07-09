@@ -334,7 +334,7 @@ export default function AddPurchase({ currentPage }) {
                   value: "true",
                 },
               ],
-              coupon_lines: couponCode ? [{ code: couponCode }] : [],
+              coupon_lines: couponCode ? [{ code: couponCode.toLocaleLowerCase() }] : [],
             };
 
             // Remove line items with quantity 0

@@ -13,6 +13,7 @@ interface MetadataDto {
   purchaseIds?: number[];
   orderIds?: string[];
   userIds?: string[];
+  todoIds?: number[];
   expiryDates?: Array<{ userId: string; expiryDate: Date }>;
 }
 

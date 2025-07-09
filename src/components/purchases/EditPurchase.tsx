@@ -58,6 +58,7 @@ export function EditPurchase({ purchase, onClose }: EditPurchaseProps) {
           additionalInfo: [{
             info: additionalInfos.length > 0 ? editedAdditionalInfos : '',
             purchase_source: "ADMIN",
+            shipped: additionalInfos.length > 0 && additionalInfos[0]?.shipped || false,
           }],
         };
         updatePurchaseStore(purchaseForStore);
@@ -147,16 +148,26 @@ export function EditPurchase({ purchase, onClose }: EditPurchaseProps) {
              <Input
           label="Additional info"
           value={pi.info}
-          onChange={(e) => editAdditionalInfo(pi.id, e.target.value, pi.is_hidden)}
+          onChange={(e) => editAdditionalInfo(pi.id, e.target.value, pi.is_hidden, pi.shipped)}
         />
-            <Switch
-              defaultSelected={pi.is_hidden}
-              size="sm"
-              color="success"
-              onChange={(e) => editAdditionalInfo(pi.id, pi.info, e.target.checked)}
-            >
-              {pi.is_hidden ? 'Hidden' : 'Visible'}
-            </Switch>
+            <div className="flex gap-4">
+              <Switch
+                defaultSelected={pi.is_hidden}
+                size="sm"
+                color="success"
+                onChange={(e) => editAdditionalInfo(pi.id, pi.info, e.target.checked, pi.shipped)}
+              >
+                {pi.is_hidden ? 'Hidden' : 'Visible'}
+              </Switch>
+              <Switch
+                defaultSelected={pi.shipped}
+                size="sm"
+                color="primary"
+                onChange={(e) => editAdditionalInfo(pi.id, pi.info, pi.is_hidden, e.target.checked)}
+              >
+                {pi.shipped ? 'Shipped' : 'Not Shipped'}
+              </Switch>
+            </div>
           </div>
         ))}
       </div>

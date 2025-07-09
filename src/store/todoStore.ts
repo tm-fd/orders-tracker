@@ -99,6 +99,9 @@ interface TodoStore {
   error: string | null;
   stats: TodoStats;
   adminUsers: AdminUser[];
+  activeFilters: {
+    todoIds?: number[];
+  };
 
   // Actions
   fetchTodos: (query?: TodoQueryDto, userId: string) => Promise<void>;
@@ -114,6 +117,8 @@ interface TodoStore {
   getStats: (userId?: string) => Promise<void>;
   clearError: () => void;
   fetchAdminUsers: (userId?: string) => Promise<void>;
+  setActiveFilters: (filters: { todoIds?: number[] }) => void;
+  clearActiveFilters: () => void;
 }
 
 export const useTodoStore = create<TodoStore>()(
@@ -130,6 +135,9 @@ export const useTodoStore = create<TodoStore>()(
         overdue: 0,
       },
       adminUsers: [],
+      activeFilters: {
+        todoIds: undefined,
+      },
 
       fetchAdminUsers: async (userId: string) => {
         try {
@@ -328,14 +336,27 @@ export const useTodoStore = create<TodoStore>()(
       clearError: () => {
         set({ error: null });
       },
+
+      setActiveFilters: (filters) => set((state) => ({
+        activeFilters: {
+          ...state.activeFilters,
+          ...filters,
+        }
+      })),
+      
+      clearActiveFilters: () => set((state) => ({
+        activeFilters: {
+          todoIds: undefined,
+        }
+      })),
     }),
     {
       name: "todos-storage",
       partialize: (state) => ({
         todos: state.todos,
         stats: state.stats,
-        userId: state.userId,
         adminUsers: state.adminUsers,
+        activeFilters: state.activeFilters,
       }),
     }
   )

@@ -1,12 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Spinner, Chip, Link, Divider, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
+import { Spinner, Chip, Link, Divider, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Switch } from "@heroui/react";
 import { PurchaseObj } from '../../store/purchaseStore';
 import ActivationRecords from './ActivationRecords';
 import { useActivationStore } from '@/store/purchaseActivactionsStore';
 import { useAdditionalInfo } from '@/app/hooks';
 import usePurchaseStore from '@/store/purchaseStore';
 import { getPNShippingStatusInfo, getDHLShippingStatusInfo } from '@/lib/utils'
+import axios from 'axios';
+import { getSession } from 'next-auth/react';
 
 interface OrderDetailsProps {
   purchase: PurchaseObj;
@@ -77,6 +79,41 @@ const formatCurrency = (amount: string, countryCode: string): string => {
     maximumFractionDigits: 0,
   }).format(numAmount);
 };
+
+  const handleShippedChange = async (purchaseId: number, shipped: boolean) => {
+    try {
+      // Find the purchase in oldPurchases to get its current additionalInfo
+      const targetPurchase = oldPurchases.find(p => p.id === purchaseId);
+      if (!targetPurchase || !targetPurchase.additionalInfo?.[0]) return;
+
+      const additionalInfoId = targetPurchase.additionalInfo[0].id;
+      if (!additionalInfoId) return;
+
+      const session = await getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      // Update the shipped status in additionalInfo using the specific endpoint
+      await axios.patch(
+        `${process.env.CLOUDRUN_DEV_URL}/purchases/additional-info/${additionalInfoId}`,
+        {
+          shipped: shipped,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.user?.sessionToken}`,
+          },
+        }
+      );
+
+      // Update local state for immediate UI feedback
+      // This would be handled by SWR revalidation in a real app
+    } catch (error) {
+      console.error('Failed to update shipped status:', error);
+    }
+  };
   
   if (!purchaseStatus) {
     return (
@@ -219,6 +256,7 @@ const formatCurrency = (amount: string, countryCode: string): string => {
                 <TableColumn>VR Glasses</TableColumn>
                 <TableColumn>Licenses</TableColumn>
                 <TableColumn>Duration</TableColumn>
+                <TableColumn>Shipped</TableColumn>
               </TableHeader>
               <TableBody>
                 {oldPurchases.map((oldPurchase, index) => (
@@ -229,6 +267,13 @@ const formatCurrency = (amount: string, countryCode: string): string => {
                     <TableCell>{oldPurchase.numberOfVrGlasses}</TableCell>
                     <TableCell>{oldPurchase.numberOfLicenses}</TableCell>
                     <TableCell>{oldPurchase.duration}</TableCell>
+                    <TableCell>
+                      <Switch
+                        defaultSelected={oldPurchase.additionalInfo[0]?.shipped || false}
+                        onChange={(e) => handleShippedChange(oldPurchase.id, e.target.checked)}
+                        size="sm"
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

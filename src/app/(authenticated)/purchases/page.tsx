@@ -10,51 +10,19 @@ import useSWR from'swr';
 
 
 
-export const fetchPurchases = async (page: number) => {
-  try {
-    const res = await fetch(`${process.env.CLOUDRUN_DEV_URL}/purchases/all-purchases?limit=370&page=${page}`, { cache: 'no-store' });
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-    const response = await res.json();
-    const customData = response.purchases.map((obj: ZPurchase) => ({
-      id: obj.id,
-      orderNumber: obj.order_number,
-      email: obj.email,
-      customerName: obj.first_name + ' ' + obj.last_name,
-      date: obj.created_at,
-      updatedDate: obj.updated_at,
-      confirmationCode: obj.code,
-      numberOfVrGlasses: obj.number_of_vr_glasses,
-      numberOfLicenses: obj.number_of_licenses,
-      isSubscription: obj.is_subscription,
-      duration: obj.duration,
-    }));
-    const data = {
-      purchases: customData.reverse(),
-      currentPage: response.currentPage,
-      total: response.total,
-      totalPages: response.totalPages
-    }
-    
-    return data
-  } catch (err: any) {
-    console.error(err.message);
-  } 
-};
-
-
 export default function Purshases() {
   const router = useRouter();
   const isInitialRender = useRef(true);
-  const { purchases, setPurchases, setError, currentPage, setCurrentPage, reset } =
+  const { purchases, setPurchases, setError, currentPage, setCurrentPage, reset, activeFilters } =
     usePurchaseStore();
+  
   const { data, isLoading, error } = usePurchasesData({
     limit: 370,
     page: currentPage,
     skip: isInitialRender.current,
   });
     //  const { data, error, isLoading } = useSWR('/purchases', page => fetchPurchases({ page: currentPage}));
+    
     useEffect(() => {
       router.refresh();
    }, []);
@@ -72,6 +40,11 @@ export default function Purshases() {
         }
       }
     }, [setPurchases, isLoading, setError, data, currentPage]);
+
+    // Debug active filters
+    useEffect(() => {
+      console.log('Active filters in purchases page:', activeFilters);
+    }, [activeFilters]);
 
   
 
