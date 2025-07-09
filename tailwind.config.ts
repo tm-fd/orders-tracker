@@ -109,7 +109,7 @@ export default {
             primary: {
               700: "#5cd63e",
               foreground: "#b1f091",
-              DEFAULT: "#43d728",
+              DEFAULT: "#2fce0f",
             },
             secondary: {
               700: "#62a3d5",

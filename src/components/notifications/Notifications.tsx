@@ -248,6 +248,7 @@ const Notifications = () => {
                     }
                   >
                     <div className="flex flex-col gap-2 overflow-x-auto">
+                      {/* Regular notification buttons */}
                       {shippingNotifications.map((notification) => (
                         <Button
                           key={notification.id}
