@@ -662,7 +662,7 @@ export default function LogsPage() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <ModalHeader className="flex flex-col gap-1 !p-4">
                 {selectedGroup ? (
                   <>
                     <h2 className="text-xl font-bold">
@@ -681,11 +681,14 @@ export default function LogsPage() {
                   </>
                 ) : null}
               </ModalHeader>
-              <ModalBody>
+              <ModalBody className="!p-2">
                 {selectedGroup ? (
-                  <div className="space-y-4">
+                  <div className="">
                     {selectedGroup.recent_logs.map((log, index) => (
-                        <div key={index} className="space-y-3">
+                        <div
+                          key={index}
+                          className={`p-2 border-b border-y-zinc-600 last:border-b-0`}
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4 text-gray-500" />
@@ -713,9 +716,9 @@ export default function LogsPage() {
                           </div>
 
                           {log.meta && Object.keys(log.meta).length > 0 && (
-                            <div className="flex items-start gap-2">
+                            <div className="flex items-start gap-2 flex-wrap">
                               <Database className="w-4 h-4 text-gray-500 mt-0.5" />
-                              <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+                              <pre className="mt-1 text-sm bg-gray-100 p-3 rounded overflow-x-auto whitespace-pre-wrap">
                                 {formatMeta(log.meta)}
                               </pre>
                             </div>
@@ -724,7 +727,7 @@ export default function LogsPage() {
                     ))}
                   </div>
                 ) : selectedLog ? (
-                    <div className="space-y-4">
+                    <div className="p-4 space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-gray-500" />
