@@ -25,6 +25,7 @@ import {
   ModalFooter,
   useDisclosure,
   Spinner,
+  Switch,
 } from "@heroui/react";
 import {
   Search,
@@ -39,8 +40,15 @@ import {
   User,
   MessageSquare,
   Database,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { LoadingModal } from "@/components/LoadingModal";
+import "../../dark.css";
+import Flatpickr from "react-flatpickr";
+import moment from "moment";
+import { useTheme } from "next-themes";
+
 
 // Types
 interface LogEntry {
@@ -86,6 +94,7 @@ interface LogFilters {
 }
 
 export default function LogsPage() {
+  const { theme, setTheme } = useTheme();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [groupedLogs, setGroupedLogs] = useState<GroupedLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,6 +103,7 @@ export default function LogsPage() {
     null
   );
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const resetFilters = {
     q: "",
@@ -171,6 +181,12 @@ export default function LogsPage() {
     }
   };
 
+   useEffect(() => {
+    console.log(theme);
+    const root = document.documentElement;
+    root.setAttribute("data-theme", theme === "dark" ? "dark" : "light");
+  }, [theme]);
+
   useEffect(() => {
     fetchLogs(filters);
   }, [filters]);
@@ -235,7 +251,7 @@ export default function LogsPage() {
   };
 
   const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
+    return moment(timestamp).format('YYYY-MM-DD HH:mm:ss');
   };
 
   function formatMeta(obj: any): string {
@@ -252,7 +268,7 @@ export default function LogsPage() {
 
   const formatGroupKey = (key: string, groupBy: string) => {
     if (groupBy === "date") {
-      return new Date(key).toLocaleDateString();
+      return moment(key).format('YYYY-MM-DD');
     }
     return key;
   };
@@ -273,17 +289,12 @@ export default function LogsPage() {
   }, [filters]);
 
   const setDateRange = (hours: number) => {
-    const now = new Date();
-    const startDate = new Date(now.getTime() - hours * 60 * 60 * 1000);
+    const now = moment();
+    const startDate = moment().subtract(hours, 'hours');
 
     // Format for datetime-local input (YYYY-MM-DDTHH:MM)
-    const formatForInput = (date: Date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hour = String(date.getHours()).padStart(2, '0');
-      const minute = String(date.getMinutes()).padStart(2, '0');
-      return `${year}-${month}-${day}T${hour}:${minute}`;
+    const formatForInput = (date: moment.Moment) => {
+      return date.format('YYYY-MM-DDTHH:mm');
     };
 
     setFilters({
@@ -304,7 +315,7 @@ export default function LogsPage() {
         <CardBody>
           <div className="">
             {/* Search and Filters */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               <div className="flex flex-col md:flex-row gap-4 items-start">
                 <Input
                   placeholder="Search logs..."
@@ -370,84 +381,120 @@ export default function LogsPage() {
                 </Select>
               </div>
 
-              {/* Date Range Filters */}
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col md:flex-row gap-4 items-start">
-                  <Input
-                    type="datetime-local"
-                    label="Start Date"
-                    placeholder="Select start date"
-                    value={filters.startDate}
-                    onChange={(e) => {
-                      setFilters({ ...filters, startDate: e.target.value, from: 0 });
-                      setCurrentPage(1);
-                    }}
-                    startContent={<Calendar className="w-4 h-4" />}
-                    className="md:w-64"
-                    isClearable
-                    onClear={() => {
-                      setFilters({ ...filters, startDate: "", from: 0 });
-                      setCurrentPage(1);
-                    }}
-                  />
-                  <Input
-                    type="datetime-local"
-                    label="End Date"
-                    placeholder="Select end date"
-                    value={filters.endDate}
-                    onChange={(e) => {
-                      setFilters({ ...filters, endDate: e.target.value, from: 0 });
-                      setCurrentPage(1);
-                    }}
-                    startContent={<Calendar className="w-4 h-4" />}
-                    className="md:w-64"
-                    isClearable
-                    onClear={() => {
-                      setFilters({ ...filters, endDate: "", from: 0 });
-                      setCurrentPage(1);
-                    }}
-                  />
-                </div>
-
-                {/* Quick Date Range Buttons */}
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    onClick={() => setDateRange(1)}
-                    startContent={<Clock className="w-3 h-3" />}
-                  >
-                    Last Hour
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    onClick={() => setDateRange(24)}
-                    startContent={<Clock className="w-3 h-3" />}
-                  >
-                    Last 24 Hours
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    onClick={() => setDateRange(24 * 7)}
-                    startContent={<Clock className="w-3 h-3" />}
-                  >
-                    Last Week
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    onClick={() => {
-                      setFilters({ ...filters, startDate: "", endDate: "", from: 0 });
-                      setCurrentPage(1);
-                    }}
-                    startContent={<RotateCcw className="w-3 h-3" />}
-                  >
-                    Clear Dates
-                  </Button>
-                </div>
+              {/* Date Range Toggle */}
+              <div className="flex items-center gap-3">
+                <Switch
+                  isSelected={showDatePicker}
+                  onValueChange={setShowDatePicker}
+                  size="sm"
+                >
+                  Show Date Filters
+                </Switch>
               </div>
+
+              {/* Date Range Filters */}
+              {showDatePicker && (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col md:flex-row gap-4 items-start">
+                    <div className="md:w-64">
+                      <label className="block text-xs font-medium text-gray-300 mb-2">
+                        Start Date & Time
+                      </label>
+                      <div className="relative">
+                        <Flatpickr
+                          options={{
+                            enableTime: true,
+                            dateFormat: "Y-m-d H:i",
+                            time_24hr: true,
+                          }}
+                          value={filters.startDate}
+                          onChange={(dates) => {
+                            if (dates.length > 0) {
+                              const formattedDate = moment(dates[0]).format('YYYY-MM-DDTHH:mm');
+                              setFilters({ ...filters, startDate: formattedDate, from: 0 });
+                              setCurrentPage(1);
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:border-transparent"
+                          placeholder="Select start date & time"
+                        />
+                        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="md:w-64">
+                      <label className="block text-xs font-medium text-gray-300 mb-2">
+                        End Date & Time
+                      </label>
+                      <div className="relative">
+                        <Flatpickr
+                          options={{
+                            enableTime: true,
+                            dateFormat: "Y-m-d H:i",
+                            time_24hr: true,
+                            allowInput: true,
+                          }}
+                          value={filters.endDate}
+                          onChange={(dates) => {
+                            if (dates.length > 0) {
+                              const formattedDate = moment(dates[0]).format('YYYY-MM-DDTHH:mm');
+                              setFilters({ ...filters, endDate: formattedDate, from: 0 });
+                              setCurrentPage(1);
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:border-transparent"
+                          placeholder="Select end date & time"
+                        />
+                        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Date Range Buttons */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onClick={() => setDateRange(1)}
+                      startContent={<Clock className="w-3 h-3" />}
+                    >
+                      Last Hour
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onClick={() => setDateRange(24)}
+                      startContent={<Clock className="w-3 h-3" />}
+                    >
+                      Last 24 Hours
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onClick={() => setDateRange(24 * 7)}
+                      startContent={<Clock className="w-3 h-3" />}
+                    >
+                      Last Week
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color={filters.startDate || filters.endDate ? "danger" : "default"}
+                      onClick={() => {
+                        setFilters({ ...filters, startDate: "", endDate: "", from: 0 });
+                        setCurrentPage(1);
+                      }}
+                      startContent={<RotateCcw className="w-3 h-3" />}
+                    >
+                      Clear Dates
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -473,9 +520,9 @@ export default function LogsPage() {
                 </p>
                 {(filters.startDate || filters.endDate) && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Filtered by date: {filters.startDate && `from ${new Date(filters.startDate).toLocaleString()}`}
+                    Filtered by date: {filters.startDate && `from ${moment(filters.startDate).format('YYYY-MM-DD HH:mm')}`}
                     {filters.startDate && filters.endDate && " "}
-                    {filters.endDate && `to ${new Date(filters.endDate).toLocaleString()}`}
+                    {filters.endDate && `to ${moment(filters.endDate).format('YYYY-MM-DD HH:mm')}`}
                   </p>
                 )}
               </div>
@@ -509,7 +556,6 @@ export default function LogsPage() {
                     <TableColumn>
                       {filters.groupBy === "date" ? "DATE" : "KEY"}
                     </TableColumn>
-                    <TableColumn>COUNT</TableColumn>
                     <TableColumn>LATEST TIMESTAMP</TableColumn>
                     <TableColumn>RECENT LOGS</TableColumn>
                   </>
@@ -537,13 +583,8 @@ export default function LogsPage() {
                         className="cursor-pointer hover:bg-gray-700"
                         onClick={() => handleGroupClick(group)}
                       >
-                        <TableCell className="font-medium text-white">
+                        <TableCell className="font-medium">
                           {formatGroupKey(group.key, filters.groupBy)}
-                        </TableCell>
-                        <TableCell>
-                          <Chip color="primary" variant="flat">
-                            {group.count}
-                          </Chip>
                         </TableCell>
                         <TableCell className="text-gray-300">
                           {formatTimestamp(group.latest_timestamp)}
