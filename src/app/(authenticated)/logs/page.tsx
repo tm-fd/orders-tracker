@@ -116,10 +116,12 @@ export default function LogsPage() {
     startDate: "",
     endDate: "",
   };
+
   const [filters, setFilters] = useState<LogFilters>(resetFilters);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageInputValue, setPageInputValue] = useState("");
 
   const logLevels = [
     { value: "", label: "All Levels" },
@@ -146,7 +148,7 @@ export default function LogsPage() {
         params.append("groupBy", searchFilters.groupBy);
       if (searchFilters.startDate) params.append("startDate", searchFilters.startDate);
       if (searchFilters.endDate) params.append("endDate", searchFilters.endDate);
-      params.append("from", searchFilters.from.toString());
+      params.append("from", Math.max(0, searchFilters.from).toString());
       params.append("size", searchFilters.size.toString());
       params.append("recent_logs", searchFilters.recent_logs.toString());
 
@@ -165,14 +167,26 @@ export default function LogsPage() {
         const groupedData = data as GroupedSearchResponse;
         setGroupedLogs(groupedData.groups);
         setTotalItems(groupedData.total_groups);
-        setTotalPages(Math.ceil(groupedData.total_groups / searchFilters.size));
+        const newTotalPages = Math.ceil(groupedData.total_groups / searchFilters.size);
+        setTotalPages(newTotalPages);
         setIsGrouped(true);
+
+        // Adjust current page if it's beyond the new total pages
+        if (newTotalPages > 0 && currentPage > newTotalPages) {
+          setCurrentPage(newTotalPages);
+        }
       } else {
         const regularData = data as SearchResponse;
         setLogs(regularData.items);
         setTotalItems(regularData.total);
-        setTotalPages(Math.ceil(regularData.total / searchFilters.size));
+        const newTotalPages = Math.ceil(regularData.total / searchFilters.size);
+        setTotalPages(newTotalPages);
         setIsGrouped(false);
+
+        // Adjust current page if it's beyond the new total pages
+        if (newTotalPages > 0 && currentPage > newTotalPages) {
+          setCurrentPage(newTotalPages);
+        }
       }
     } catch (error) {
       console.error("Error fetching logs:", error);
@@ -203,9 +217,35 @@ export default function LogsPage() {
   };
 
   const handlePageChange = (page: number) => {
-    const newFilters = { ...filters, from: (page - 1) * filters.size };
+    // Ensure page is within valid bounds
+    const validPage = Math.max(1, Math.min(page, totalPages));
+    const from = Math.max(0, (validPage - 1) * filters.size);
+
+    const newFilters = { ...filters, from };
     setFilters(newFilters);
-    setCurrentPage(page);
+    setCurrentPage(validPage);
+
+    // Clear page input when navigating via pagination buttons
+    setPageInputValue("");
+  };
+
+  const handlePageInputSubmit = () => {
+    const pageNumber = parseInt(pageInputValue, 10);
+    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= totalPages) {
+      handlePageChange(pageNumber);
+      setPageInputValue("");
+    } else if (!isNaN(pageNumber)) {
+      // If number is out of range, go to the closest valid page
+      const validPage = Math.max(1, Math.min(pageNumber, totalPages));
+      handlePageChange(validPage);
+      setPageInputValue("");
+    }
+  };
+
+  const handlePageInputKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handlePageInputSubmit();
+    }
   };
 
   const handleGroupClick = (group: GroupedLogEntry) => {
@@ -534,7 +574,7 @@ export default function LogsPage() {
             aria-label="Logs table" 
             className="min-h-[400px]"
             bottomContent={
-          <div className="flex w-full justify-center">
+          <div className="flex w-full justify-center items-center gap-4">
             <Pagination
               isCompact
               showShadow
@@ -544,8 +584,34 @@ export default function LogsPage() {
               onChange={handlePageChange}
               showControls
             />
-            
-            <div className="flex gap-2"></div>
+
+            {/* Direct page navigation */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">
+                  Page {currentPage} of {totalPages} | Go to:
+                </span>
+                <Input
+                  type="number"
+                  placeholder="Page"
+                  value={pageInputValue}
+                  onChange={(e) => setPageInputValue(e.target.value)}
+                  onKeyPress={handlePageInputKeyPress}
+                  className="w-20"
+                  size="sm"
+                  min={1}
+                  max={totalPages}
+                />
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onClick={handlePageInputSubmit}
+                  isDisabled={!pageInputValue || totalPages === 0}
+                >
+                  Go
+                </Button>
+              </div>
+            )}
           </div>
         }
         bottomContentPlacement="outside"
@@ -718,7 +784,7 @@ export default function LogsPage() {
                           {log.meta && Object.keys(log.meta).length > 0 && (
                             <div className="flex items-start gap-2 flex-wrap">
                               <Database className="w-4 h-4 text-gray-500 mt-0.5" />
-                              <pre className="mt-1 text-sm bg-gray-100 p-3 rounded overflow-x-auto whitespace-pre-wrap">
+                              <pre className="mt-1 text-sm bg-gray-100 p-3 rounded overflow-x-auto whitespace-pre-wrap break-words">
                                 {formatMeta(log.meta)}
                               </pre>
                             </div>
