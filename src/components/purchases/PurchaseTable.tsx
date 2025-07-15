@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   Table,
   TableHeader,
@@ -17,6 +17,7 @@ import {
   SelectedItems,
   SelectSection,
   Button,
+  useDisclosure,
 } from "@heroui/react";
 import {
   Purchase,
@@ -27,6 +28,8 @@ import { SearchIcon } from "../icons";
 import usePurchaseStore from "@/store/purchaseStore";
 import { getSource, PurchaseSource } from "@/app/utils";
 import AddPurchase from "@/components/purchases/AddPurchase";
+import CreateTodoModal from "@/components/purchases/CreateTodoModal";
+import { Plus } from "lucide-react";
 import moment from "moment";
 
 export default function PurchaseTable() {
@@ -43,6 +46,11 @@ export default function PurchaseTable() {
   const [showContinueTraining, setShowContinueTraining] = useState(false);
   const [showMultipleLicenses, setShowMultipleLicenses] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [selectedPurchaseIds, setSelectedPurchaseIds] = useState<Set<number>>(new Set());
+  const { isOpen: isTodoModalOpen, onOpen: onTodoModalOpen, onOpenChange: onTodoModalOpenChange } = useDisclosure();
+
+  // Check if missing shipping filter is selected
+  const isMissingShippingSelected = selectedFilters.includes("missing_shipping");
 
   const filterOptions = {
     sources: [
@@ -56,6 +64,7 @@ export default function PurchaseTable() {
       { value: "show_hidden", label: "Show Hidden" },
       { value: "unused_activation", label: "Unused Activation Code" },
       { value: "active_not_trained", label: "Active not trained" },
+      { value: "missing_shipping", label: "Missing Shipping" },
     ],
   };
 
@@ -198,6 +207,14 @@ export default function PurchaseTable() {
                 case "active_not_trained":
                   return checkActiveNotTrainedUsers(recentPurchase);
 
+                case "missing_shipping":
+                  // Check if shipping is missing based on purchase status and additionalInfo
+                  const status = purchaseStatuses[recentPurchase.id];
+                  const hasShippingInfo = status?.shippingInfo;
+                  const isShipped = recentPurchase.additionalInfo?.some(info => info.shipped === true);
+                  // Consider shipping missing if no shipping info and not marked as shipped
+                  return !hasShippingInfo && !isShipped && recentPurchase.numberOfVrGlasses > 0;
+
                 default:
                   return true;
               }
@@ -270,6 +287,54 @@ export default function PurchaseTable() {
     setPage(1);
   }, []);
 
+  // Get filtered purchases for missing shipping selection
+  const missingShippingPurchases = useMemo(() => {
+    if (!isMissingShippingSelected) return [];
+    
+    return filteredItems.map(item => item.recentPurchase);
+  }, [filteredItems, isMissingShippingSelected]);
+
+  const selectedPurchases = useMemo(() => {
+    return missingShippingPurchases.filter(purchase => selectedPurchaseIds.has(purchase.id));
+  }, [missingShippingPurchases, selectedPurchaseIds]);
+
+  const handlePurchaseSelection = (purchaseId: number, isSelected: boolean) => {
+    console.log('Individual selection:', purchaseId, isSelected); // Debug log
+    setSelectedPurchaseIds(prev => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(purchaseId);
+      } else {
+        newSet.delete(purchaseId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (isSelected: boolean) => {
+    console.log('Select all triggered:', isSelected); // Debug log
+    if (isSelected) {
+      setSelectedPurchaseIds(new Set(missingShippingPurchases.map(p => p.id)));
+    } else {
+      setSelectedPurchaseIds(new Set());
+    }
+  };
+
+  const handleCreateTodos = () => {
+    onTodoModalOpen();
+  };
+
+  const handleTodoCreated = () => {
+    setSelectedPurchaseIds(new Set());
+  };
+
+  // Auto-select missing shipping filter when coming from notification
+  useEffect(() => {
+    if (activeFilters.missingShipping && !selectedFilters.includes("missing_shipping")) {
+      setSelectedFilters(prev => [...prev, "missing_shipping"]);
+    }
+  }, [activeFilters.missingShipping]);
+
   const topContent = useMemo(() => {
     const hasFilters =
       selectedFilters.size > 0 ||
@@ -277,8 +342,65 @@ export default function PurchaseTable() {
       (activeFilters.purchaseIds != null &&
         activeFilters.purchaseIds.length > 0);
 
+    const hasNotificationFilters =
+      activeFilters.missingShipping ||
+      (activeFilters.purchaseIds != null &&
+        activeFilters.purchaseIds.length > 0);
+
     return (
       <div className="flex flex-col gap-4">
+        {/* Show notification filter indicator */}
+        {hasNotificationFilters && (
+          <div className="flex items-center justify-between p-3 bg-primary-50 border border-primary-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-primary-700">
+                Showing purchases from notification
+              </span>
+              {activeFilters.purchaseIds && (
+                <span className="text-xs text-primary-600">
+                  ({activeFilters.purchaseIds.length} selected)
+                </span>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="light"
+              color="primary"
+              onPress={clearActiveFilters}
+            >
+              Clear Filter
+            </Button>
+          </div>
+        )}
+
+        {/* Missing shipping selection controls */}
+        {isMissingShippingSelected && missingShippingPurchases.length > 0 && (
+          <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg space-y-2">
+            <div className="flex justify-between items-center">
+              <Checkbox
+                defaultSelected={selectedPurchaseIds.size === missingShippingPurchases.length && missingShippingPurchases.length > 0}
+                isIndeterminate={selectedPurchaseIds.size > 0 && selectedPurchaseIds.size < missingShippingPurchases.length}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+              >
+                <span className="font-medium">Select All Missing Shipments ({missingShippingPurchases.length})</span>
+              </Checkbox>
+              {selectedPurchaseIds.size > 0 && (
+                <Button
+                  size="sm"
+                  color="primary"
+                  className="text-black"
+                  startContent={<Plus className="w-4 h-4" />}
+                  onPress={handleCreateTodos}
+                >
+                  Create {selectedPurchaseIds.size} Todo{selectedPurchaseIds.size !== 1 ? 's' : ''}
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-warning-700">
+              Select purchases to create todos for missing shipments. This will help track and follow up on unshipped orders.
+            </p>
+          </div>
+        )}
         <div className="flex flex-row items-end gap-3">
           <div className="flex w-1/3">
             <Input
@@ -369,6 +491,10 @@ export default function PurchaseTable() {
     currentPage,
     activeFilters,
     clearActiveFilters,
+    missingShippingPurchases,
+    selectedPurchaseIds,
+    handleSelectAll,
+    handleCreateTodos,
   ]);
 
   const handlePaginationChange = (page) => {
@@ -404,13 +530,18 @@ export default function PurchaseTable() {
           wrapper: "min-h-[222px]",
         }}
       >
-        <TableHeader columns={columns}>
+        <TableHeader columns={isMissingShippingSelected ? [{ key: "select", label: "" }, ...columns] : columns}>
           {(column) => (
             <TableColumn
               key={column.key}
               {...(column.key === "date" ? { allowsSorting: true } : {})}
+              className={column.key === "date" ? "flex justify-start items-center" : ""}
             >
-              <div className="flex items-center gap-2">
+              <div
+                className={`flex items-center 
+                  ${column.key === "actions" ? "justify-end" : "justify-start"}
+                  gap-2`}
+              >
                 {column.label}
                 {column.key === "actions" && (
                   <Tooltip
@@ -460,10 +591,17 @@ export default function PurchaseTable() {
             <TableRow key={item.recentPurchase.id}>
               {(columnKey) => (
                 <TableCell>
-                  {renderCell(
-                    item.recentPurchase,
-                    columnKey,
-                    item.oldPurchases
+                  {columnKey === "select" && isMissingShippingSelected ? (
+                    <Checkbox
+                      defaultSelected={selectedPurchaseIds.has(item.recentPurchase.id)}
+                      onChange={(e) => handlePurchaseSelection(item.recentPurchase.id, e.target.checked)}
+                    />
+                  ) : (
+                    renderCell(
+                      item.recentPurchase,
+                      columnKey,
+                      item.oldPurchases
+                    )
                   )}
                 </TableCell>
               )}
@@ -471,6 +609,13 @@ export default function PurchaseTable() {
           )}
         </TableBody>
       </Table>
+      
+      <CreateTodoModal
+        isOpen={isTodoModalOpen}
+        onClose={() => onTodoModalOpenChange(false)}
+        selectedPurchases={selectedPurchases}
+        onSuccess={handleTodoCreated}
+      />
     </div>
   );
 }

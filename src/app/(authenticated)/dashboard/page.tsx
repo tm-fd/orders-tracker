@@ -11,12 +11,6 @@ import {
   Button,
   ButtonGroup,
   cn,
-  Spinner,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Skeleton,
 } from "@heroui/react";
 import { use, useCallback, useEffect, useState } from "react";
@@ -41,6 +35,7 @@ import moment from "moment";
 import { parseDate } from "@internationalized/date";
 import PurchaseTrends from "@/components/dashboard/PurchaseTrends";
 import ActivationsTrend from "@/components/dashboard/ActivationsTrend";
+import { LoadingModal } from "@/components/LoadingModal";
 import "../../dark.css";
 import Flatpickr from "react-flatpickr";
 import { useTheme } from "next-themes";
@@ -420,30 +415,9 @@ export default function DashboardPage() {
           <DatePickerIcon className="w-5 h-5 text-gray-400" />
         </div>
       </div>
-      <Modal
-        backdrop="blur"
+      <LoadingModal
         isOpen={isLoading || (isLoadingLast12Weeks && !isLoadingValidUsers)}
-        placement="top-center"
-        classNames={{
-          closeButton: "hidden",
-          wrapper: "z-[1000000]",
-          backdrop: "fixed inset-0 z-[1000000]",
-        }}
-        className="bg-transparent shadow-none"
-        isDismissable={false}
-        shadow="sm"
-        isKeyboardDismissDisabled={true}
-      >
-        <ModalContent>
-          {() => (
-            <>
-              <ModalBody className="flex flex-col h-20">
-                <Spinner size="lg" color="secondary" />
-              </ModalBody>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
         <Card className="bg-white/10 dark:bg-default-100/50 justify-end">
