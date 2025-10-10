@@ -77,7 +77,7 @@ const SourceCell = ({ purchase, oldPurchases }: {
   return (
     <Purchase>
       {source === 'Admin' && <span className="italic">Admin</span>}
-      {source === 'Woo' && <span className="text-purple-400 italic">Woo</span>}
+      {source === 'Shopify' && <span className=" text-green-400 italic">Shopify</span>}
       {source === 'Imported' && <span className="italic">Imported</span>}
     </Purchase>
   );

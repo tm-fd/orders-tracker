@@ -55,7 +55,7 @@ export default function PurchaseTable() {
   const filterOptions = {
     sources: [
       { value: "Admin", label: "Admin" },
-      { value: "Woo", label: "Woo" },
+      { value: "Shopify", label: "Shopify" },
       { value: "Imported", label: "Imported" },
     ],
     filters: [
