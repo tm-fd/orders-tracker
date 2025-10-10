@@ -1,7 +1,7 @@
 import { PurchaseObj } from '../store/purchaseStore';
 import { LoadingBars } from '@/components/icons';
 
-export type PurchaseSource = 'Admin' | 'Woo' | 'Imported';
+export type PurchaseSource = 'Admin' | 'Shopify' | 'Imported';
 
 export const getSource = (
   purchase: PurchaseObj
@@ -13,7 +13,7 @@ export const getSource = (
     }
   
     if (purchase.additionalInfo[0].purchase_source === "WEBSHOP") {
-      return 'Woo';
+      return 'Shopify';
     }
 
     // if (purchase.additionalInfo[0].purchase_source === "IMPORTED") {
