@@ -71,6 +71,7 @@ export default function AddPurchase({ currentPage }) {
   const [loading, setLoading] = useState(false);
   const [createShopifyOrder, setCreateShopifyOrder] = useState(false);
   const [couponCode, setCouponCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
   const [shippingAddress, setShippingAddress] = useState({
     address1: "",
     address2: "",
@@ -158,12 +159,12 @@ export default function AddPurchase({ currentPage }) {
         "any.required": "Country is required",
       }),
       phone: Joi.string()
-      .pattern(/^(\+?[1-9]\d{1,14}|0\d{9})$/)
-      .allow("") 
-      .optional()
-      .messages({
-        "string.pattern.base": "Please enter a valid phone number",
-      }),
+        .pattern(/^(\+?[1-9]\d{1,14}|0\d{9})$/)
+        .allow("")
+        .optional()
+        .messages({
+          "string.pattern.base": "Please enter a valid phone number",
+        }),
     });
 
     return shippingAddressSchema.validate(shippingAddress, {
@@ -173,23 +174,16 @@ export default function AddPurchase({ currentPage }) {
 
   const getLastShopifyOrderId = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL}/admin/api/2024-07/orders.json`,
-        {
-          params: {
-            limit: 1,
-            order: "created_at desc",
-            status: "any",
-          },
-          headers: {
-            'X-Shopify-Access-Token': process.env.NEXT_PUBLIC_SHOPIFY_ACCESS_TOKEN,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await fetch('/api/shopify/createOrder');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch last Shopify order');
+      }
 
-      if (response.data && response.data.orders && response.data.orders.length > 0) {
-        return String(response.data.orders[0].order_number + 1);
+      const data = await response.json();
+      
+      if (data.lastOrderNumber) {
+        return String(data.lastOrderNumber + 1);
       }
       return null;
     } catch (error) {
@@ -214,85 +208,87 @@ export default function AddPurchase({ currentPage }) {
       }
     }
 
-    // const orderNumber = cryptoRandomString({ length: 10, type: "numeric" });
-    // const code = cryptoRandomString({
-    //   length: 4,
-    //   characters: "2346789abcdefghjkmnpqrtuvwxyzABCDEFGHJKMNPQRTUVWXYZ",
-    // });
+    const orderNumber = cryptoRandomString({ length: 10, type: "numeric" });
+    const code = cryptoRandomString({
+      length: 4,
+      characters: "2346789abcdefghjkmnpqrtuvwxyzABCDEFGHJKMNPQRTUVWXYZ",
+    });
 
-    // const purchaseType = isSubscription
-    //   ? "SUBSCRIPTION"
-    //   : Number(duration) === 42 ||
-    //     Number(duration) === 180 ||
-    //     Number(duration) === 360 ||
-    //     (Number(duration) === 84 && Number(numberOfVrGlasses) === 0)
-    //   ? "CONTINUE_TRAINING"
-    //   : "START_PACKAGE";
+    const purchaseType = isSubscription
+      ? "SUBSCRIPTION"
+      : Number(duration) === 42 ||
+        Number(duration) === 180 ||
+        Number(duration) === 360 ||
+        (Number(duration) === 84 && Number(numberOfVrGlasses) === 0)
+      ? "CONTINUE_TRAINING"
+      : "START_PACKAGE";
 
+    const initPurchaseObj = {
+      email,
+      firstName,
+      lastName,
+      code,
+      numberOfVrGlasses: numberOfVrGlasses ? Number(numberOfVrGlasses) : -1,
+      numberOfLicenses: Number(numberOfLicenses),
+      isSubscription,
+      duration: Number(duration),
+      orderNumber,
+      additional_info: {
+        info: additionalInfo,
+        purchase_source: "ADMIN",
+        purchase_type: purchaseType,
+      },
+    };
 
-    // const initPurchaseObj = {
-    //   email,
-    //   firstName,
-    //   lastName,
-    //   code,
-    //   numberOfVrGlasses: numberOfVrGlasses ? Number(numberOfVrGlasses) : -1,
-    //   numberOfLicenses: Number(numberOfLicenses),
-    //   isSubscription,
-    //   duration: Number(duration),
-    //   orderNumber,
-    //   additional_info: {
-    //     info: additionalInfo,
-    //     purchase_source: "ADMIN",
-    //     purchase_type: purchaseType,
-    //   },
-    // };
+    const { error } = JoiValidatePurchase(initPurchaseObj);
+    if (error) {
+      setErrorMessage(error.details[0].message);
+      setLoading(false);
+      return;
+    }
 
-    // const { error } = JoiValidatePurchase(initPurchaseObj);
-    // if (error) {
-    //   setErrorMessage(error.details[0].message);
-    //   setLoading(false);
-    //   return;
-    // }
-
-    // const orderNumberFromShopify = createShopifyOrder
-    //   ? await getLastShopifyOrderId()
-    //   : orderNumber;
-    // const purchaseObj = {
-    //   ...initPurchaseObj,
-    //   orderNumber: orderNumberFromShopify,
-    // };
+    const orderNumberFromShopify = createShopifyOrder
+      ? await getLastShopifyOrderId()
+      : orderNumber;
+    const purchaseObj = {
+      ...initPurchaseObj,
+      orderNumber: orderNumberFromShopify,
+    };
     try {
-      // const purchaseRes = await axios.post(
-      //   `${process.env.CLOUDRUN_DEV_URL}/purchases/addPurchase`,
-      //   purchaseObj,
-      //   {
-      //     headers: {
-      //       'Content-Type': 'application/json',
-      //       'Authorization': `Bearer ${session?.user?.sessionToken}`,
-      //     },
-      //   }
-      // );
+      const purchaseRes = await axios.post(
+        `${process.env.CLOUDRUN_DEV_URL}/purchases/addPurchase`,
+        purchaseObj,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.user?.sessionToken}`,
+          },
+        }
+      );
 
-      if (true) {
-        // const purchaseId = purchaseRes.data.id;
+      if (purchaseRes.status === 200) {
+        const purchaseId = purchaseRes.data.id;
         // If Shopify order creation is enabled, create the order
         if (createShopifyOrder) {
           try {
-            // Prepare line items for Shopify
+            // Prepare line items for Shopify using individual products
             const lineItems = [];
-            
+
+            // Add VR Glasses if quantity > 0
             if (Number(numberOfVrGlasses) > 0) {
               lineItems.push({
-                variant_id: process.env.NEXT_PUBLIC_SHOPIFY_VR_GLASSES_VARIANT_ID,
+                variant_id:
+                  process.env.NEXT_PUBLIC_SHOPIFY_VR_GLASSES_VARIANT_ID,
                 quantity: Number(numberOfVrGlasses),
-                price: couponCode.trim() === "" ? "0.00" : "500.00",
+                price: "500.00",
               });
             }
-            
+
+            // Add License (always included)
             lineItems.push({
               variant_id: process.env.NEXT_PUBLIC_SHOPIFY_LICENSE_VARIANT_ID,
               quantity: Number(numberOfLicenses),
-              price: couponCode.trim() === "" ? "0.00" : "1500.00",
+              price: "1500.00",
             });
 
             const shopifyOrderData = {
@@ -352,40 +348,34 @@ export default function AddPurchase({ currentPage }) {
               },
             };
 
-            // Add discount code if provided
+            // Add discount code if provided with amount
             if (couponCode && couponCode.trim() !== "") {
               shopifyOrderData.order.discount_codes = [
                 {
                   code: couponCode.trim(),
-                  amount: "0.00",
-                  type: "percentage",
+                  amount: discountAmount && discountAmount.trim() !== "" ? discountAmount.trim() : "0.00",
+                  type: "fixed_amount",
                 },
               ];
             }
 
             const shopifyRes = await axios.post(
-              '/api/shopify/createOrder',
+              "/api/shopify/createOrder",
               shopifyOrderData,
               {
                 headers: {
-                  'Content-Type': 'application/json',
+                  "Content-Type": "application/json",
                 },
               }
             );
-            
+
             console.log("Shopify order created:", shopifyRes.data);
-            
-            if (
-              shopifyRes.status !== 200 &&
-              shopifyRes.status !== 201
-            ) {
+
+            if (shopifyRes.status !== 200 && shopifyRes.status !== 201) {
               throw new Error("Failed to create Shopify order");
             }
           } catch (shopifyError) {
-            console.error(
-              "Error creating Shopify order:",
-              shopifyError
-            );
+            console.error("Error creating Shopify order:", shopifyError);
             setErrorMessage(
               "Purchase added, but failed to create Shopify order. Please try creating the order manually."
             );
@@ -426,28 +416,28 @@ export default function AddPurchase({ currentPage }) {
             return;
           }
         }
-        // addPurchase({
-        //   id: purchaseId,
-        //   orderNumber: createShopifyOrder
-        //     ? orderNumberFromShopify
-        //     : orderNumber,
-        //   email,
-        //   customerName: firstName + " " + lastName,
-        //   date: purchaseRes.data.created_at,
-        //   updatedDate: purchaseRes.data.updated_at,
-        //   confirmationCode: code,
-        //   numberOfVrGlasses: Number(numberOfLicenses),
-        //   numberOfLicenses: Number(numberOfLicenses),
-        //   isSubscription: isSubscription,
-        //   duration: Number(duration),
-        //   additionalInfo: [
-        //     {
-        //       info: additionalInfo,
-        //       purchase_source: "ADMIN",
-        //       purchase_type: purchaseType,
-        //     },
-        //   ],
-        // });
+        addPurchase({
+          id: purchaseId,
+          orderNumber: createShopifyOrder
+            ? orderNumberFromShopify
+            : orderNumber,
+          email,
+          customerName: firstName + " " + lastName,
+          date: purchaseRes.data.created_at,
+          updatedDate: purchaseRes.data.updated_at,
+          confirmationCode: code,
+          numberOfVrGlasses: Number(numberOfLicenses),
+          numberOfLicenses: Number(numberOfLicenses),
+          isSubscription: isSubscription,
+          duration: Number(duration),
+          additionalInfo: [
+            {
+              info: additionalInfo,
+              purchase_source: "ADMIN",
+              purchase_type: purchaseType,
+            },
+          ],
+        });
 
         // Then mutate SWR cache
         mutate([
@@ -519,6 +509,7 @@ export default function AddPurchase({ currentPage }) {
     mutate,
     currentPage,
     couponCode,
+    discountAmount
   ]);
 
   const handleInputChange = (e) => {
@@ -694,6 +685,19 @@ export default function AddPurchase({ currentPage }) {
                       value={couponCode}
                       onValueChange={setCouponCode}
                       description="Enter discount code which has been created in Shopify"
+                    />
+                    <Input
+                      label="Discount Amount"
+                      variant="bordered"
+                      type="number"
+                      value={discountAmount}
+                      onValueChange={setDiscountAmount}
+                      description="Enter discount amount in dollars (e.g., 100.00 for Kr100 off)"
+                      startContent={
+                        <div className="pointer-events-none flex items-center">
+                          <span className="text-default-400 text-small">Kr</span>
+                        </div>
+                      }
                     />
                     <h3 className="text-lg font-semibold">Shipping Address</h3>
                     <Input
