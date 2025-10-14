@@ -349,15 +349,15 @@ export default function AddPurchase({ currentPage }) {
             };
 
             // Add discount code if provided with amount
-            if (couponCode && couponCode.trim() !== "") {
+            // if (couponCode && couponCode.trim() !== "") {
               shopifyOrderData.order.discount_codes = [
                 {
-                  code: couponCode.trim(),
+                  code: "admin_discount",
                   amount: discountAmount && discountAmount.trim() !== "" ? discountAmount.trim() : "0.00",
                   type: "fixed_amount",
                 },
               ];
-            }
+            // }
 
             const shopifyRes = await axios.post(
               "/api/shopify/createOrder",
@@ -679,13 +679,6 @@ export default function AddPurchase({ currentPage }) {
                 {createShopifyOrder && (
                   <div className="space-y-4 mt-4 p-4 bg-gray-50 rounded-lg">
                     <h3 className="text-lg font-semibold">Discount</h3>
-                    <Input
-                      label="Coupon Code"
-                      variant="bordered"
-                      value={couponCode}
-                      onValueChange={setCouponCode}
-                      description="Enter discount code which has been created in Shopify"
-                    />
                     <Input
                       label="Discount Amount"
                       variant="bordered"
