@@ -69,8 +69,9 @@ export default function AddPurchase({ currentPage }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [loading, setLoading] = useState(false);
-  const [createWooCommerceOrder, setCreateWooCommerceOrder] = useState(false);
+  const [createShopifyOrder, setCreateShopifyOrder] = useState(false);
   const [couponCode, setCouponCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
   const [shippingAddress, setShippingAddress] = useState({
     address1: "",
     address2: "",
@@ -158,12 +159,12 @@ export default function AddPurchase({ currentPage }) {
         "any.required": "Country is required",
       }),
       phone: Joi.string()
-      .pattern(/^(\+?[1-9]\d{1,14}|0\d{9})$/)
-      .allow("") 
-      .optional()
-      .messages({
-        "string.pattern.base": "Please enter a valid phone number",
-      }),
+        .pattern(/^(\+?[1-9]\d{1,14}|0\d{9})$/)
+        .allow("")
+        .optional()
+        .messages({
+          "string.pattern.base": "Please enter a valid phone number",
+        }),
     });
 
     return shippingAddressSchema.validate(shippingAddress, {
@@ -171,29 +172,22 @@ export default function AddPurchase({ currentPage }) {
     });
   };
 
-  const getLastOrderId = async () => {
+  const getLastShopifyOrderId = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.IMVI_WOOCOMMERCE_URL}/wp-json/wc/v3/orders`,
-        {
-          params: {
-            per_page: 1,
-            orderby: "date",
-            order: "desc",
-          },
-          auth: {
-            username: process.env.WOO_API_KEY,
-            password: process.env.WOO_API_SECERT,
-          },
-        }
-      );
+      const response = await fetch('/api/shopify/createOrder');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch last Shopify order');
+      }
 
-      if (response.data && response.data.length > 0) {
-        return String(response.data[0].id + 1);
+      const data = await response.json();
+      
+      if (data.lastOrderNumber) {
+        return String(data.lastOrderNumber + 1);
       }
       return null;
     } catch (error) {
-      console.error("Error fetching last order ID:", error);
+      console.error("Error fetching last Shopify order ID:", error);
       return null;
     }
   };
@@ -202,7 +196,7 @@ export default function AddPurchase({ currentPage }) {
     if (loading) return;
     setLoading(true);
 
-    if (createWooCommerceOrder) {
+    if (createShopifyOrder) {
       const { error: shippingError } = validateShippingAddress(shippingAddress);
       if (shippingError) {
         const errorMessage = shippingError.details
@@ -229,7 +223,6 @@ export default function AddPurchase({ currentPage }) {
       ? "CONTINUE_TRAINING"
       : "START_PACKAGE";
 
-
     const initPurchaseObj = {
       email,
       firstName,
@@ -254,12 +247,12 @@ export default function AddPurchase({ currentPage }) {
       return;
     }
 
-    const orderNumberFromWoo = createWooCommerceOrder
-      ? await getLastOrderId()
+    const orderNumberFromShopify = createShopifyOrder
+      ? await getLastShopifyOrderId()
       : orderNumber;
     const purchaseObj = {
       ...initPurchaseObj,
-      orderNumber: orderNumberFromWoo,
+      orderNumber: orderNumberFromShopify,
     };
     try {
       const purchaseRes = await axios.post(
@@ -267,106 +260,124 @@ export default function AddPurchase({ currentPage }) {
         purchaseObj,
         {
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.user?.sessionToken}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.user?.sessionToken}`,
           },
         }
       );
 
       if (purchaseRes.status === 200) {
         const purchaseId = purchaseRes.data.id;
-        // If WooCommerce order creation is enabled, create the order
-        if (createWooCommerceOrder) {
+        // If Shopify order creation is enabled, create the order
+        if (createShopifyOrder) {
           try {
-            const wooCommerceOrderData = {
-              payment_method: "bacs",
-              payment_method_title: "Unknown Payment Transfer",
-              set_paid: true,
-              status: "processing",
-              billing: {
-                first_name: firstName,
-                last_name: lastName,
-                address_1: shippingAddress.address1,
-                address_2: shippingAddress.address2 || "",
-                city: shippingAddress.city,
-                state: shippingAddress.state,
-                postcode: shippingAddress.postcode,
-                country: shippingAddress.country,
+            // Prepare line items for Shopify using individual products
+            const lineItems = [];
+
+            // Add VR Glasses if quantity > 0
+            if (Number(numberOfVrGlasses) > 0) {
+              lineItems.push({
+                variant_id:
+                  process.env.NEXT_PUBLIC_SHOPIFY_VR_GLASSES_VARIANT_ID,
+                quantity: Number(numberOfVrGlasses),
+                price: "500.00",
+              });
+            }
+
+            // Add License (always included)
+            lineItems.push({
+              variant_id: process.env.NEXT_PUBLIC_SHOPIFY_LICENSE_VARIANT_ID,
+              quantity: Number(numberOfLicenses),
+              price: "1500.00",
+            });
+
+            const shopifyOrderData = {
+              order: {
                 email: email,
-                phone: shippingAddress.phone,
+                financial_status: "paid",
+                fulfillment_status: null,
+                send_receipt: false,
+                send_fulfillment_receipt: false,
+                // note: `Created from dashboard. Activation Code: ${code}`,
+                customer: {
+                  first_name: firstName,
+                  last_name: lastName,
+                  email: email,
+                },
+                billing_address: {
+                  first_name: firstName,
+                  last_name: lastName,
+                  address1: shippingAddress.address1,
+                  address2: shippingAddress.address2 || "",
+                  city: shippingAddress.city,
+                  province: shippingAddress.state,
+                  zip: shippingAddress.postcode,
+                  country: shippingAddress.country,
+                  phone: shippingAddress.phone,
+                },
+                shipping_address: {
+                  first_name: firstName,
+                  last_name: lastName,
+                  address1: shippingAddress.address1,
+                  address2: shippingAddress.address2 || "",
+                  city: shippingAddress.city,
+                  province: shippingAddress.state,
+                  zip: shippingAddress.postcode,
+                  country: shippingAddress.country,
+                  phone: shippingAddress.phone,
+                },
+                line_items: lineItems,
+                shipping_lines: [
+                  {
+                    title: "Standard Shipping",
+                    price: "0.00",
+                    code: "Free Shipping",
+                  },
+                ],
+                note_attributes: [
+                  // {
+                  //   name: "_activation_code",
+                  //   value: code,
+                  // },
+                  {
+                    name: "_created_from_dashboard",
+                    value: "true",
+                  },
+                ],
+                tags: "dashboard-created",
               },
-              shipping: {
-                first_name: firstName,
-                last_name: lastName,
-                address_1: shippingAddress.address1,
-                address_2: shippingAddress.address2 || "",
-                city: shippingAddress.city,
-                state: shippingAddress.state,
-                postcode: shippingAddress.postcode,
-                country: shippingAddress.country,
-              },
-              line_items: [
-                {
-                  product_id: process.env.VR_GLASSES_PRODUCT_ID,
-                  quantity: Number(numberOfVrGlasses) || 0,
-                  total: couponCode.trim() === "" ? "0" : undefined,
-                },
-                {
-                  product_id: process.env.LICENSE_PRODUCT_ID,
-                  quantity: Number(numberOfLicenses),
-                  total: couponCode.trim() === "" ? "0" : undefined,
-                },
-              ],
-              shipping_lines: [
-                {
-                  method_id: "flat_rate",
-                  method_title: "Flat Rate",
-                  total: "0.00",
-                },
-              ],
-              meta_data: [
-                {
-                  key: "_activation_code",
-                  value: code,
-                },
-                {
-                  key: "_created_from_dashboard",
-                  value: "true",
-                },
-              ],
-              coupon_lines: couponCode ? [{ code: couponCode.toLocaleLowerCase() }] : [],
             };
 
-            // Remove line items with quantity 0
-            wooCommerceOrderData.line_items =
-              wooCommerceOrderData.line_items.filter(
-                (item) => item.quantity > 0
-              );
+            // Add discount code if provided with amount
+            // if (couponCode && couponCode.trim() !== "") {
+              shopifyOrderData.order.discount_codes = [
+                {
+                  code: "admin_discount",
+                  amount: discountAmount && discountAmount.trim() !== "" ? discountAmount.trim() : "0.00",
+                  type: "fixed_amount",
+                },
+              ];
+            // }
 
-            const wooCommerceRes = await axios.post(
-              `${process.env.IMVI_WOOCOMMERCE_URL}/wp-json/wc/v3/orders`,
-              wooCommerceOrderData,
+            const shopifyRes = await axios.post(
+              "/api/shopify/createOrder",
+              shopifyOrderData,
               {
-                auth: {
-                  username: process.env.WOO_API_KEY,
-                  password: process.env.WOO_API_SECERT,
+                headers: {
+                  "Content-Type": "application/json",
                 },
               }
             );
-            console.log(wooCommerceRes);
-            if (
-              wooCommerceRes.status !== 200 &&
-              wooCommerceRes.status !== 201
-            ) {
-              throw new Error("Failed to create WooCommerce order");
+
+            console.log("Shopify order created:", shopifyRes.data);
+
+            if (shopifyRes.status !== 200 && shopifyRes.status !== 201) {
+              throw new Error("Failed to create Shopify order");
             }
-          } catch (wooCommerceError) {
-            console.error(
-              "Error creating WooCommerce order:",
-              wooCommerceError
-            );
+          } catch (shopifyError) {
+            console.error("Error creating Shopify order:", shopifyError);
             setErrorMessage(
-              "Purchase added, but failed to create WooCommerce order. Please try creating the order manually."
+              "Purchase added, but failed to create Shopify order. Please try creating the order manually."
             );
             setLoading(false);
             return;
@@ -407,8 +418,8 @@ export default function AddPurchase({ currentPage }) {
         }
         addPurchase({
           id: purchaseId,
-          orderNumber: createWooCommerceOrder
-            ? orderNumberFromWoo
+          orderNumber: createShopifyOrder
+            ? orderNumberFromShopify
             : orderNumber,
           email,
           customerName: firstName + " " + lastName,
@@ -450,7 +461,7 @@ export default function AddPurchase({ currentPage }) {
         setIsSubscription(false);
         setDuration("");
         setAdditionalInfo("");
-        setCreateWooCommerceOrder(false);
+        setCreateShopifyOrder(false);
         setShippingAddress({
           address1: "",
           address2: "",
@@ -493,11 +504,12 @@ export default function AddPurchase({ currentPage }) {
     isSubscription,
     duration,
     additionalInfo,
-    createWooCommerceOrder,
+    createShopifyOrder,
     shippingAddress,
     mutate,
     currentPage,
     couponCode,
+    discountAmount
   ]);
 
   const handleInputChange = (e) => {
@@ -656,23 +668,29 @@ export default function AddPurchase({ currentPage }) {
                 </Select>
                 <Checkbox
                   autoFocus
-                  isSelected={createWooCommerceOrder}
-                  onValueChange={setCreateWooCommerceOrder}
+                  isSelected={createShopifyOrder}
+                  onValueChange={setCreateShopifyOrder}
                   color="secondary"
                 >
-                  Create WooCommerce Order
+                  Create Shopify Order
                 </Checkbox>
 
-                {/* Shipping Address Form - only shown when createWooCommerceOrder is true */}
-                {createWooCommerceOrder && (
+                {/* Shipping Address Form - only shown when createShopifyOrder is true */}
+                {createShopifyOrder && (
                   <div className="space-y-4 mt-4 p-4 bg-gray-50 rounded-lg">
                     <h3 className="text-lg font-semibold">Discount</h3>
                     <Input
-                      label="Coupon Code"
+                      label="Discount Amount"
                       variant="bordered"
-                      value={couponCode}
-                      onValueChange={setCouponCode}
-                      description="Enter coupon code which has been created in woocommerce"
+                      type="number"
+                      value={discountAmount}
+                      onValueChange={setDiscountAmount}
+                      description="Enter discount amount in dollars (e.g., 100.00 for Kr100 off)"
+                      startContent={
+                        <div className="pointer-events-none flex items-center">
+                          <span className="text-default-400 text-small">Kr</span>
+                        </div>
+                      }
                     />
                     <h3 className="text-lg font-semibold">Shipping Address</h3>
                     <Input
