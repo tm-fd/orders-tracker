@@ -39,6 +39,9 @@ export default function UserPurchaseDetails({
   } = usePurchaseStore();
   const purchaseStatus = purchaseStatuses[Number(purchase.id)];
 
+  console.log(purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeEmailStatus, 
+    purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeSmsStatus)
+
   const fetchActivationRecord = async (purchaseId: number) => {
     try {
       const res = await fetch(
@@ -112,24 +115,6 @@ export default function UserPurchaseDetails({
         }
         // Fetch order email
         let orderEmail = null;
-        try {
-          const emailRes = await fetch('/api/handleOrdersEmail', {
-            cache: 'no-store',
-          });
-          if (emailRes.ok) {
-            const emailData = await emailRes.json();
-            const sentEmails = emailData.filter(
-              (emailObj) => emailObj.ContactAlt === purchase.email.toLowerCase()
-            );
-            orderEmail = sentEmails.find(
-              (email) =>
-                email.Subject === 'Tack för din order från imvi labs!' ||
-                email.Subject.includes('förnyelseorder')
-            )?.Status;
-          }
-        } catch (emailError) {
-          console.error('Error fetching order email:', emailError);
-        }
 
         let shippingInfo = null;
         try {
