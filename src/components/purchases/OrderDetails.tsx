@@ -37,7 +37,7 @@ export default function OrderDetails({ purchase, oldPurchases }: OrderDetailsPro
   } = useAdditionalInfo(purchase.id);
   const {
     orderStatus,
-    orderEmail,
+    orderConfirmationNotification,
     shippingInfo,
     activationRecords,
     isActivated_and_VR_delivered,
@@ -169,17 +169,17 @@ const formatCurrency = (amount: string, countryCode: string): string => {
         )}
 
         {/* Order Email Section */}
-        {orderEmail && (
+        {orderConfirmationNotification && (
           <div className="flex flex-col items-center justify-center mb-4">
             <div>
               Confirmation email:{' '}
               <Chip
                 className="capitalize"
-                color={emailStatusColorMap[orderEmail]}
+                color={emailStatusColorMap[orderConfirmationNotification]}
                 size="sm"
                 variant="flat"
               >
-                {orderEmail === 'sent' ? 'Delivered' : orderEmail}
+                {orderConfirmationNotification === 'sent' ? 'Delivered' : orderConfirmationNotification}
               </Chip>
             </div>
           </div>

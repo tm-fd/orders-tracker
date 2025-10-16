@@ -40,7 +40,7 @@ export interface PurchaseObj {
 
 interface PurchaseStatus {
   orderStatus: any | null;
-  orderEmail: string | null;
+  orderConfirmationNotification: string | null;
   shippingInfo: any | null;
   activationRecords: any[];
   hasOrderStatus_email: boolean;

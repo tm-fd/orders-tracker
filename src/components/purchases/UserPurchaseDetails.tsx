@@ -113,8 +113,11 @@ export default function UserPurchaseDetails({
             console.error("Unexpected order status error:", orderStatusError);
           }
         }
-        // Fetch order email
-        let orderEmail = null;
+        // Set order confirmation notification from purchase data
+        let orderConfirmationNotification = {
+          activationCodeEmailStatus: purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeEmailStatus,
+          activationCodeSmsStatus: purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeSmsStatus
+        };
 
         let shippingInfo = null;
         try {
@@ -185,7 +188,7 @@ export default function UserPurchaseDetails({
           validUntil && moment(validUntil).isBefore(moment());
 
         const hasOrderStatus_email = Boolean(
-          orderStatus && orderEmail && !shippingInfo
+          orderStatus && orderConfirmationNotification && !shippingInfo
         );
 
         const startedTraining = Boolean(
@@ -197,7 +200,7 @@ export default function UserPurchaseDetails({
 
         const startedTraining_with_VR = Boolean(
           orderStatus &&
-            orderEmail &&
+            orderConfirmationNotification &&
             shippingInfo &&
             (shippingInfo.status === "DELIVERED" ||
               shippingInfo.status?.statusCode === "delivered") &&
@@ -209,7 +212,7 @@ export default function UserPurchaseDetails({
 
         const isActivated_and_VR_delivered_Not_trained = Boolean(
           orderStatus &&
-            orderEmail &&
+            orderConfirmationNotification &&
             shippingInfo &&
             (shippingInfo.status === "DELIVERED" ||
               shippingInfo.status?.statusCode === "delivered") &&
@@ -221,7 +224,7 @@ export default function UserPurchaseDetails({
 
         const isActivated_and_VR_not_delivered = Boolean(
           orderStatus &&
-            orderEmail &&
+            orderConfirmationNotification &&
             shippingInfo &&
             shippingInfo.status !== "DELIVERED" &&
             activationRecords &&
@@ -237,7 +240,7 @@ export default function UserPurchaseDetails({
         // Store the results in Zustand
         setPurchaseStatus(Number(purchase.id), {
           orderStatus,
-          orderEmail,
+          orderConfirmationNotification,
           shippingInfo,
           activationRecords,
           isActivated_and_VR_delivered_Not_trained,
