@@ -17,7 +17,7 @@ export function PurchaseProgressSteps({ purchaseStatus }: PurchaseStatus) {
       case 'orderPlaced':
         return !!purchaseStatus.orderStatus;
       case 'orderConfirmed':
-        return !!purchaseStatus.orderEmail;
+        return !!purchaseStatus.orderConfirmationNotification;
       case 'vrShipped':
         return !!purchaseStatus.shippingInfo;
       case 'vrDelivered':

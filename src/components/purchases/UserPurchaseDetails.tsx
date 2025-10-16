@@ -39,6 +39,9 @@ export default function UserPurchaseDetails({
   } = usePurchaseStore();
   const purchaseStatus = purchaseStatuses[Number(purchase.id)];
 
+  console.log(purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeEmailStatus, 
+    purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeSmsStatus)
+
   const fetchActivationRecord = async (purchaseId: number) => {
     try {
       const res = await fetch(
@@ -110,26 +113,11 @@ export default function UserPurchaseDetails({
             console.error("Unexpected order status error:", orderStatusError);
           }
         }
-        // Fetch order email
-        let orderEmail = null;
-        try {
-          const emailRes = await fetch('/api/handleOrdersEmail', {
-            cache: 'no-store',
-          });
-          if (emailRes.ok) {
-            const emailData = await emailRes.json();
-            const sentEmails = emailData.filter(
-              (emailObj) => emailObj.ContactAlt === purchase.email.toLowerCase()
-            );
-            orderEmail = sentEmails.find(
-              (email) =>
-                email.Subject === 'Tack för din order från imvi labs!' ||
-                email.Subject.includes('förnyelseorder')
-            )?.Status;
-          }
-        } catch (emailError) {
-          console.error('Error fetching order email:', emailError);
-        }
+        // Set order confirmation notification from purchase data
+        let orderConfirmationNotification = {
+          activationCodeEmailStatus: purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeEmailStatus,
+          activationCodeSmsStatus: purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeSmsStatus
+        };
 
         let shippingInfo = null;
         try {
@@ -200,7 +188,7 @@ export default function UserPurchaseDetails({
           validUntil && moment(validUntil).isBefore(moment());
 
         const hasOrderStatus_email = Boolean(
-          orderStatus && orderEmail && !shippingInfo
+          orderStatus && orderConfirmationNotification && !shippingInfo
         );
 
         const startedTraining = Boolean(
@@ -212,7 +200,7 @@ export default function UserPurchaseDetails({
 
         const startedTraining_with_VR = Boolean(
           orderStatus &&
-            orderEmail &&
+            orderConfirmationNotification &&
             shippingInfo &&
             (shippingInfo.status === "DELIVERED" ||
               shippingInfo.status?.statusCode === "delivered") &&
@@ -224,7 +212,7 @@ export default function UserPurchaseDetails({
 
         const isActivated_and_VR_delivered_Not_trained = Boolean(
           orderStatus &&
-            orderEmail &&
+            orderConfirmationNotification &&
             shippingInfo &&
             (shippingInfo.status === "DELIVERED" ||
               shippingInfo.status?.statusCode === "delivered") &&
@@ -236,7 +224,7 @@ export default function UserPurchaseDetails({
 
         const isActivated_and_VR_not_delivered = Boolean(
           orderStatus &&
-            orderEmail &&
+            orderConfirmationNotification &&
             shippingInfo &&
             shippingInfo.status !== "DELIVERED" &&
             activationRecords &&
@@ -252,7 +240,7 @@ export default function UserPurchaseDetails({
         // Store the results in Zustand
         setPurchaseStatus(Number(purchase.id), {
           orderStatus,
-          orderEmail,
+          orderConfirmationNotification,
           shippingInfo,
           activationRecords,
           isActivated_and_VR_delivered_Not_trained,
