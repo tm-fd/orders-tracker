@@ -39,9 +39,6 @@ export default function UserPurchaseDetails({
   } = usePurchaseStore();
   const purchaseStatus = purchaseStatuses[Number(purchase.id)];
 
-  console.log(purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeEmailStatus, 
-    purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeSmsStatus)
-
   const fetchActivationRecord = async (purchaseId: number) => {
     try {
       const res = await fetch(
