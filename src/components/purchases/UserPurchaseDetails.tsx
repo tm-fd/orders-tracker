@@ -111,10 +111,11 @@ export default function UserPurchaseDetails({
           }
         }
         // Set order confirmation notification from purchase data
-        let orderConfirmationNotification = {
-          activationCodeEmailStatus: purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeEmailStatus,
-          activationCodeSmsStatus: purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeSmsStatus
-        };
+        const activationCodeEmailStatus = purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeEmailStatus;
+        const activationCodeSmsStatus = purchase?.additionalInfo[0]?.activation_code_notification_status?.activationCodeSmsStatus;
+        
+        // Use email status as primary, fall back to SMS status, or null if neither exists
+        let orderConfirmationNotification = activationCodeEmailStatus || activationCodeSmsStatus || null;
 
         let shippingInfo = null;
         try {
